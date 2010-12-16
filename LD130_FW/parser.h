@@ -8,10 +8,31 @@
 #ifndef Parser_201012101442
 #define Parser_201012101442
 
+//void index
+#define NOT_MATCH_INDEX 255
+
+//count of used patterns
+#define PATTERNS_COUNT 27
+
+//maximum count of named variables
+#define VALUES_COUNT 49
+
+//maximum count of variables in pattern
+#define MAX_VALUES_IN_PATTERN 50
+
+//maximum length of variable name
+#define STRING_NAME_LENGTH 20
+
+//maximum length of value in characters
+#define STRING_VALUE_LENGTH 10
+
 /**
  * InitializeParser() will do the Parser engine initialization.
  */
-extern "C" void InitializeParser();
+#ifdef __cplusplus
+extern "C"
+#endif
+void InitializeParser();
 
 /**
  * Parse the incoming string and copy the found variables into
@@ -24,7 +45,10 @@ extern "C" void InitializeParser();
  *         pattern. Return value of 1 indicates that the command
  *         is found in reply, but no parameters
  */
-extern "C" unsigned char ParseSentence(char * pSentenceIn);
+#ifdef __cplusplus
+extern "C"
+#endif
+unsigned char ParseSentence(char * pSentenceIn);
 
 
 /**
@@ -36,7 +60,10 @@ extern "C" unsigned char ParseSentence(char * pSentenceIn);
  *
  * @return const char* - returns pointer to a buffer
  */
-extern "C" const char * GetValueByNum(unsigned char anIndex);
+#ifdef __cplusplus
+extern "C"
+#endif
+const char * GetValueByNum(unsigned char anIndex);
 
 
 /**
@@ -47,7 +74,10 @@ extern "C" const char * GetValueByNum(unsigned char anIndex);
  *
  * @return const char* - returns pointer to a buffer
  */
-extern "C" const char * GetValueByName(const char * pName);
+#ifdef __cplusplus
+extern "C"
+#endif
+const char * GetValueByName(const char * pName);
 
 
 /**
@@ -55,7 +85,10 @@ extern "C" const char * GetValueByName(const char * pName);
  *
  * @return const char* - returns pointer to a cmd name buffer
  */
-extern "C" const char * GetCmdName();
+#ifdef __cplusplus
+extern "C"
+#endif
+const char * GetCmdName();
 
 #endif
 

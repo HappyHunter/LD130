@@ -9,8 +9,8 @@
 
 #include "common.h"
 
-void Task_UART1 (void);
-void Task_UART2 (void);
+void Start_UART1 (void);
+void Start_UART2 (void);
 
 void outputChar_UART1(char ch);
 void outputString_UART1(const char* pCh);
@@ -23,16 +23,11 @@ void outputIntAsHexString_UART2(unsigned long aValue);
 void outputIntAsString_UART2(unsigned long aValue);
 
 
+extern OST_CSEM  Uart1_Msg;
+extern OST_CSEM  Uart2_Msg;
 
-
-
-
-
-
-
-
-//extern TUartBuff Uart1;
-//extern TUartBuff Uart2;
+extern TUartBuff Uart1;
+extern TUartBuff Uart2;
 
 //#define UartDbg Uart2
 //

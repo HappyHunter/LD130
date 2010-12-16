@@ -40,7 +40,7 @@ OST_CSEM  Uart1_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Task_UART1 (void)
+void Start_UART1 (void)
 {
 	unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
 
@@ -127,10 +127,6 @@ void Task_UART1 (void)
 	Uart1.m_UartID = 1;        	// the ID is 1
 	Uart1.m_baud_rate = Uart1_Baud_Rate;
 
-	for (;;)
-    {
-        OS_Csem_Wait (Uart1_Msg);	// now wait here untill any data arrives to UART
-    }
 }
 
 
@@ -248,7 +244,7 @@ OST_CSEM  Uart2_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Task_UART2 (void)
+void Start_UART2 (void)
 {
 	unsigned long Uart2_Baud_Rate;	// stored rate for UART 1
 

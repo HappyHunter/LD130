@@ -10,26 +10,10 @@
     #include "osa.h"
 #endif
 
+#include "parser.h"
 #include "common.h"
 #include <string.h>
 
-//void index
-#define NOT_MATCH_INDEX 255
-
-//count of used patterns
-#define PATTERNS_COUNT 27
-
-//maximum count of named variables
-#define VALUES_COUNT 49
-
-//maximum count of variables in pattern
-#define MAX_VALUES_IN_PATTERN 30
-
-//maximum length of variable name
-#define STRING_NAME_LENGTH 20
-
-//maximum length of value in characters
-#define STRING_VALUE_LENGTH 20
 
 //Command Patterns
 const char * const CmdTemplates[PATTERNS_COUNT] =
@@ -96,10 +80,10 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
     "softtrig,triggerId",
 
     // the bank sequence, where each element is a bank ID (0-3)
-    "setseqdata,seqdata",
+    "setseqdata,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
     "getseqdata",
     // the index of the position currently programmed to the controller
-    "seqdata,curIdx,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250",
+    "seqdata,curIdx,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
 
     "setportspeed,comport,baud,flags",
     "getportspeed,comport",
