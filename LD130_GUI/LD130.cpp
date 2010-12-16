@@ -1,0 +1,37 @@
+//---------------------------------------------------------------------------
+
+#include <vcl.h>
+#pragma hdrstop
+//---------------------------------------------------------------------------
+USEFORM("MainWindow.cpp", FormMainWindow);
+USEFORM("ComPortConfig.cpp", FormComPortConfig);
+USEFORM("CommonData.cpp", DataModuleCommon); /* TDataModule: File Type */
+//---------------------------------------------------------------------------
+WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+{
+    try
+    {
+        Application->Initialize();
+        Application->CreateForm(__classid(TFormMainWindow), &FormMainWindow);
+         Application->CreateForm(__classid(TFormComPortConfig), &FormComPortConfig);
+         Application->CreateForm(__classid(TDataModuleCommon), &DataModuleCommon);
+         Application->Run();
+    }
+    catch (Exception &exception)
+    {
+         Application->ShowException(&exception);
+    }
+    catch (...)
+    {
+         try
+         {
+                 throw Exception("");
+         }
+         catch (Exception &exception)
+         {
+                 Application->ShowException(&exception);
+         }
+    }
+    return 0;
+}
+//---------------------------------------------------------------------------
