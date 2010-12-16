@@ -20,6 +20,8 @@ public:
 	TSerialConMan();
 	~TSerialConMan();
 
+	bool isConnected() const;
+
 	TCommandErrorOutput send(const char* pCmd) const;
 
 	TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TSerialOnLogEvent pLogEvent = 0);

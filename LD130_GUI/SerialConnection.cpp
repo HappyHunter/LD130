@@ -176,6 +176,11 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 	return retCode;
 }
 
+//-----------------------------------------------------------------------------------------
+bool TSerialConMan::isConnected() const
+{
+	return m_hComPort != INVALID_HANDLE_VALUE && m_hComPort != 0;
+}
 
 //-----------------------------------------------------------------------------------------
 TCommandErrorOutput TSerialConMan::send(const char* pCmd) const

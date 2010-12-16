@@ -14,6 +14,7 @@ TLD130Impl::TLD130Impl()
 	: m_activeBank (0)
 	, m_sequenceIndex(0)
 	, m_cfgFlags(0)
+	, m_onLogEvent(0)
 {
 }
 
@@ -28,6 +29,11 @@ TCommandErrorOutput TLD130Impl::init(int aComPort, int aSpeed,TLD130OnLogEvent o
 	m_onLogEvent = onLogEvent;
 	TCommandErrorOutput retCode = m_conMan.init(aComPort, aSpeed, onLogEvent);
 
+	m_verMajor.clear();
+	m_verMinor.clear();
+	m_verBuild.clear();
+
+
 	if (!retCode.hasError()) {
 		m_verMajor = TSerialConMan::GetValueByName("vermajor");
 		m_verMinor = TSerialConMan::GetValueByName("verminor");
@@ -35,6 +41,12 @@ TCommandErrorOutput TLD130Impl::init(int aComPort, int aSpeed,TLD130OnLogEvent o
 		readFromController();
 	}
     return retCode;
+}
+
+//-----------------------------------------------------------------------------------------
+bool TLD130Impl::isConnected() const
+{
+	return m_conMan.isConnected() && !m_verMajor.empty() && !m_verMinor.empty() && !m_verBuild.empty();
 }
 
 
@@ -52,6 +64,18 @@ TCommandErrorOutput TLD130Impl::softTrig(int aTrigId)
 //-----------------------------------------------------------------------------------------
 void TLD130Impl::readFromController()
 {
+	getConfigDataImpl();
+
+	for (int i = 0; i < sizeof(m_bankData)/sizeof(m_bankData[0]); ++i) {
+		getBankDataImpl(i);
+	}
+
+	getBankSequenceImpl();
+}
+
+//-----------------------------------------------------------------------------------------
+void TLD130Impl::getConfigDataImpl()
+{
   	char cmdBuf[1024] = {0};
 
 	// "getcfgdata"
@@ -63,13 +87,8 @@ void TLD130Impl::readFromController()
 		m_activeBank = atoi(TSerialConMan::GetValueByName("activeBank"));
 		m_cfgFlags = atoi(TSerialConMan::GetValueByName("flags"));
 	}
-
-	for (int i = 0; i < sizeof(m_bankData)/sizeof(m_bankData[0]); ++i) {
-		getBankDataImpl(i);
-	}
-
-	getBankSequenceImpl();
 }
+
 
 //---------------------------------------------------------------------------
 void TLD130Impl::getBankDataImpl(unsigned short aBankId)
@@ -160,18 +179,31 @@ void TLD130Impl::getBankSequenceImpl()
 					 string(TSerialConMan::GetValueByName("s_220")) +
 					 string(TSerialConMan::GetValueByName("s_230")) +
 			         string(TSerialConMan::GetValueByName("s_240")) +
-			         string(TSerialConMan::GetValueByName("s_250")) ;
+			         string(TSerialConMan::GetValueByName("s_250")) +
+					 string(TSerialConMan::GetValueByName("s_260")) +
+					 string(TSerialConMan::GetValueByName("s_270")) +
+					 string(TSerialConMan::GetValueByName("s_280")) +
+					 string(TSerialConMan::GetValueByName("s_290")) +
+					 string(TSerialConMan::GetValueByName("s_300")) +
+					 string(TSerialConMan::GetValueByName("s_310")) +
+					 string(TSerialConMan::GetValueByName("s_320")) +
+					 string(TSerialConMan::GetValueByName("s_330")) +
+					 string(TSerialConMan::GetValueByName("s_340")) +
+					 string(TSerialConMan::GetValueByName("s_350")) +
+					 string(TSerialConMan::GetValueByName("s_360")) +
+					 string(TSerialConMan::GetValueByName("s_370")) +
+					 string(TSerialConMan::GetValueByName("s_380")) +
+					 string(TSerialConMan::GetValueByName("s_390")) +
+					 string(TSerialConMan::GetValueByName("s_400"))
+		 ;
 	}
 }
 
 //---------------------------------------------------------------------------
 TBankHeadData  TLD130Impl::getBankHeadData(unsigned short aBankId/*1,2,3,4*/, unsigned short aHeadId /*1,2*/) const
 {
-	if (aBankId < 1) aBankId = 1;
-	if (aBankId > GLOBAL_BANK_COUNT) aBankId = GLOBAL_BANK_COUNT;
-
-	if (aHeadId < 1) aHeadId = 1;
-	if (aHeadId > 2) aHeadId = 2;
+	aBankId 	 = std::min(std::max(aBankId,		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aHeadId 	 = std::min(std::max(aHeadId, 	1), 	2);                 // 1,2
 
 	return m_bankData[aBankId-1].m_headData[aHeadId-1];
 }
@@ -179,8 +211,7 @@ TBankHeadData  TLD130Impl::getBankHeadData(unsigned short aBankId/*1,2,3,4*/, un
 //---------------------------------------------------------------------------
 THeadStatus  TLD130Impl::getHeadStatus(unsigned short aHeadId /*1,2*/)
 {
-	if (aHeadId < 1) aHeadId = 1;
-	if (aHeadId > 2) aHeadId = 2;
+	aHeadId 	 = std::min(std::max(aHeadId, 	1), 	2);                 // 1,2
 
   	char cmdBuf[1024] = {0};
 
@@ -213,11 +244,8 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(unsigned short aBankId,			//1,2,
 								    unsigned short aChanelAmplifier	 // the amplification value 1-5
 )
 {
-	if (aBankId < 1) aBankId = 1;
-	if (aBankId > GLOBAL_BANK_COUNT) aBankId = GLOBAL_BANK_COUNT;
-
-	if (aHeadId < 1) aHeadId = 1;
-	if (aHeadId > 2) aHeadId = 2;
+	aBankId 	 = std::min(std::max(aBankId,		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aHeadId 	 = std::min(std::max(aHeadId, 	1), 	2);                 // 1,2
 
 	TBankHeadData theData;
 
@@ -237,30 +265,32 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(unsigned short aBankId,			//1,2,
 }
 
 //---------------------------------------------------------------------------
-TCommandErrorOutput TLD130Impl::setBankHeadData(const TBankHeadData& aData)
+TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 {
 
-	unsigned short theBankId = aData.m_bankId;
-	unsigned short theHeadId = aData.m_outputId;
+	// update error checking for properties
+	aData.m_bankId 		 = std::min(std::max(aData.m_bankId, 		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aData.m_outputId 	 = std::min(std::max(aData.m_outputId, 		1), 	2);                 // 1,2
+	aData.m_voltage 	 = std::min(std::max(aData.m_voltage, 		0), 	100);               // 0 - 100 Volts
+	aData.m_powerChanel1 = std::min(std::max(aData.m_powerChanel1,	0), 	10000);			    // 0 - 100 00% with fixed decimal point at 2 digits
+	aData.m_powerChanel2 = std::min(std::max(aData.m_powerChanel2,	0), 	10000);             // for example the power of 35.23% will be sent as 3523
+	aData.m_powerChanel3 = std::min(std::max(aData.m_powerChanel4,	0), 	10000);             // the power of 99.00% will be sent as 9900
+	aData.m_powerChanel4 = std::min(std::max(aData.m_powerChanel3,	0), 	10000);             // the power of 100.00% will be sent as 10000
+	aData.m_strobeDelay  = std::min(std::max(aData.m_strobeDelay, 	0),  	0xFFFFFFFF);        // the delay of outcoming light strobe in microseconds
+	aData.m_strobeWidth  = std::min(std::max(aData.m_strobeWidth, 	0),  	0xFFFFFFFF);        // the duration of outcoming light strobe in microseconds
+	aData.m_triggerEdge  = std::min(std::max(aData.m_triggerEdge, 	0),  	2);                 // the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+	aData.m_triggerId    = std::min(std::max(aData.m_triggerId, 	1),  	3);                 // the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+	aData.m_chanelAmplifier= std::min(std::max(aData.m_triggerId, 	1),  	5);                 // the amplification value 1-5
 
-	if (theBankId < 1) theBankId = 1;
-	if (theBankId > GLOBAL_BANK_COUNT) theBankId = GLOBAL_BANK_COUNT;
-
-	if (theHeadId < 1) theHeadId = 1;
-	if (theHeadId > 2) theHeadId = 2;
-
-	m_bankData[theBankId-1].m_headData[theHeadId-1] = aData;
-
-	// update back the proper IDs in case they have changed
-	m_bankData[theBankId-1].m_headData[theHeadId-1].m_bankId 	= theBankId;
-	m_bankData[theBankId-1].m_headData[theHeadId-1].m_outputId	= theHeadId;
+	// save the data localy
+	m_bankData[aData.m_bankId-1].m_headData[aData.m_outputId-1] = aData;
 
   	char cmdBuf[1024] = {0};
 
 	// "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
   	_snprintf (cmdBuf, sizeof(cmdBuf) / sizeof(cmdBuf[0]), "bankdata,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-		theBankId,				//1,2,3,4
-		theHeadId, 				//1,2
+		aData.m_bankId,			// 1,2,3,4
+		aData.m_outputId, 		// 1,2
 		aData.m_voltage,		// 0 - 100 Volts
 		aData.m_powerChanel1, 	// 0 - 100 00% with fixed decimal point at 2 digits
 		aData.m_powerChanel2,	// for example the power of 35.23% will be sent as 3523
@@ -288,3 +318,34 @@ TCommandErrorOutput TLD130Impl::setActiveBank(unsigned short aBankId)
 	m_activeBank = aBankId;
 	return m_conMan.send(cmdBuf);
 }
+
+//---------------------------------------------------------------------------
+TCommandErrorOutput TLD130Impl::setSequence(const string& aValue)
+{
+    //"setseqdata,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
+
+	string theCmd = "setseqdata,";
+
+	// clear our internal sequence first
+	m_sequence.clear();
+
+	// we need to split the bank data in groups of 10
+	int iIndex = 0;
+	for (unsigned int iStr = 0; iStr < aValue.length(); ++iStr) {
+
+		// some validity of data
+		if (aValue[iStr] >= '1' && aValue[iStr] < ('1' + GLOBAL_BANK_COUNT)) {
+			if ((++iIndex % 10) == 0){
+				theCmd += ',';
+			}
+			theCmd += aValue[iStr];
+
+			// update our internal sequence as well
+			m_sequence += aValue[iStr];
+		}
+	}
+
+	theCmd += '\n';
+	return m_conMan.send(theCmd.c_str());
+}
+

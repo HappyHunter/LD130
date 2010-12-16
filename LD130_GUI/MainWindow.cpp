@@ -48,8 +48,8 @@ using namespace std;
 
 //---------------------------------------------------------------------------
 __fastcall TFormMainWindow::TFormMainWindow(TComponent* Owner)
-	: TForm(Owner)
-	, m_updateActiveBank (false)
+: TForm(Owner)
+, m_updateActiveBank (false)
 {
 
 	m_headControlInfo.addControlGroup (0, edChanel1Head1, tbChanel1Head1);
@@ -112,61 +112,66 @@ void __fastcall TFormMainWindow::EditChange(TObject* Sender)
 void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 {
 	const int bankIndex = rzchkEnableBanks->Checked ? RzTabBanks->TabIndex+1 : 1;
-	bool bUpdated = false;
+	bool bUpdated1 = false;
 	if (m_headControlInfo.m_updateHead[0]) {
 		m_headControlInfo.m_updateHead[0] = false;
 
 		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
-			bankIndex,
-			1,								  // 1 - head 1, 2 - Head 2
-			int(edVoltageHead1->IntValue),	  // 0 - 100 Volts
-			int(edChanel1Head1->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
-			int(edChanel2Head1->Value*100.f), // for example the power of 35.23% will be sent as 3523
-			int(edChanel3Head1->Value*100.f), // the power of 99.00% will be sent as 9900
-			int(edChanel4Head1->Value*100.f), // the power of 100.00% will be sent as 10000
-			int(edDelayHead1->IntValue),	  // the delay of outcoming light strobe in microseconds
-			int(edWidthHead1->IntValue),	  // the duration of outcoming light strobe in microseconds
-			rbRaisingTriggerHead1->Checked ? 0 : 1,	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
-			3,	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-			grHead1Amplifier->ItemIndex + 1	// the amplification value 1-5
-		);
+															 bankIndex,
+															 1,								   // 1 - head 1, 2 - Head 2
+															 int(edVoltageHead1->IntValue),	   // 0 - 100 Volts
+															 int(edChanel1Head1->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
+															 int(edChanel2Head1->Value*100.f), // for example the power of 35.23% will be sent as 3523
+															 int(edChanel3Head1->Value*100.f), // the power of 99.00% will be sent as 9900
+															 int(edChanel4Head1->Value*100.f), // the power of 100.00% will be sent as 10000
+															 int(edDelayHead1->IntValue),	   // the delay of outcoming light strobe in microseconds
+															 int(edWidthHead1->IntValue),	   // the duration of outcoming light strobe in microseconds
+															 rbRaisingTriggerHead1->Checked ? 0 : 1, // the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+															 3,	 								// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+															 grHead1Amplifier->ItemIndex + 1 	// the amplification value 1-5
+															 );
 
 		if (retCode.hasError()) {
 			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
 		}
-		bUpdated = true;
+		bUpdated1 = true;
 	}
+
+	bool bUpdated2 = false;
 	if (m_headControlInfo.m_updateHead[1]) {
 		m_headControlInfo.m_updateHead[1] = false;
 		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
-			bankIndex,
-			2,								  // 1 - head 1, 2 - Head 2
-			int(edVoltageHead2->IntValue),	  // 0 - 100 Volts
-			int(edChanel1Head2->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
-			int(edChanel2Head2->Value*100.f), // for example the power of 35.23% will be sent as 3523
-			int(edChanel3Head2->Value*100.f), // the power of 99.00% will be sent as 9900
-			int(edChanel4Head2->Value*100.f), // the power of 100.00% will be sent as 10000
-			int(edDelayHead2->IntValue),	  // the delay of outcoming light strobe in microseconds
-			int(edWidthHead2->IntValue),	  // the duration of outcoming light strobe in microseconds
-			rbRaisingTriggerHead2->Checked ? 0 : 1,	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
-			3,	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-			grHead2Amplifier->ItemIndex + 1	// the amplification value 1-5
-		);
+															 bankIndex,
+															 2,								   // 1 - head 1, 2 - Head 2
+															 int(edVoltageHead2->IntValue),	   // 0 - 100 Volts
+															 int(edChanel1Head2->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
+															 int(edChanel2Head2->Value*100.f), // for example the power of 35.23% will be sent as 3523
+															 int(edChanel3Head2->Value*100.f), // the power of 99.00% will be sent as 9900
+															 int(edChanel4Head2->Value*100.f), // the power of 100.00% will be sent as 10000
+															 int(edDelayHead2->IntValue),	   // the delay of outcoming light strobe in microseconds
+															 int(edWidthHead2->IntValue),	   // the duration of outcoming light strobe in microseconds
+															 rbRaisingTriggerHead2->Checked ? 0 : 1, // the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+															 3,	 								// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+															 grHead2Amplifier->ItemIndex + 1 	// the amplification value 1-5
+															 );
 
 		if (retCode.hasError()) {
 			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
 		}
-		bUpdated = true;
+		bUpdated2 = true;
 	}
 
 	if (m_updateActiveBank) {
 		m_updateActiveBank = false;
 		m_LD130.setActiveBank(RzTabBanks->TabIndex+1);
-		bUpdated = true;
+		bUpdated1 = true;
+		bUpdated2 = true;
 	}
 
-	if (bUpdated) {
+	if (bUpdated1) {
 		m_LD130.getHeadStatus(1);
+	}
+	if (bUpdated2) {
 		m_LD130.getHeadStatus(2);
 	}
 }
@@ -174,25 +179,25 @@ void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 
 void __fastcall TFormMainWindow::actTriggerHead1Execute(TObject *Sender)
 {
-//	m_headControlInfo.m_updateHead[0] = true;
+	m_headControlInfo.m_updateHead[0] = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::actTriggerHead1Update(TObject *Sender)
 {
-//  actTriggerHead1->Enabled = !cbAutoTrigger->Checked;
+	actTriggerHead1->Enabled = !cbAutoTrigger->Checked;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::actTriggerHead2Execute(TObject *Sender)
 {
-//  m_headControlInfo.m_updateHead[1] = true;
+	m_headControlInfo.m_updateHead[1] = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::actTriggerHead2Update(TObject *Sender)
 {
-//  actTriggerHead2->Enabled = !cbAutoTrigger->Checked;
+	actTriggerHead2->Enabled = !cbAutoTrigger->Checked;
 }
 
 //---------------------------------------------------------------------------
@@ -207,8 +212,7 @@ void __fastcall TFormMainWindow::cbAutoTriggerClick(TObject *Sender)
 {
 	if (cbAutoTrigger->Checked) {
 		RzBtnSoftTrigger->GroupIndex = 1;
-	}
-	else {
+	} else {
 		RzBtnSoftTrigger->GroupIndex = 0;
 		RzBtnSoftTrigger->Caption = "Trigger";
 	}
@@ -230,8 +234,7 @@ void __fastcall TFormMainWindow::cbComPortCloseUp(TObject *Sender)
 
 	if (retCode.hasError()) {
 		RzFieldFirmwareVersion->Caption = "ERROR";
-	}
-	else {
+	} else {
 		string verMajor, verMinor,verBuild;
 		m_LD130.getVersion(verMajor, verMinor,verBuild);
 
@@ -300,13 +303,13 @@ void __fastcall TFormMainWindow::TabSheet1Show(TObject *Sender)
 
 void __fastcall TFormMainWindow::rbRaisingTriggerHead2Click(TObject *Sender)
 {
-//  m_headControlInfo.m_updateHead[1] = true;
+	m_headControlInfo.m_updateHead[1] = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::rbFallingTriggerHead2Click(TObject *Sender)
 {
-//  m_headControlInfo.m_updateHead[1] = true;
+	m_headControlInfo.m_updateHead[1] = true;
 }
 //---------------------------------------------------------------------------
 
@@ -482,22 +485,20 @@ void __fastcall TFormMainWindow::FormShow(TObject *Sender)
 
 void __fastcall TFormMainWindow::TimerAutoTriggerTimer(TObject *Sender)
 {
-    m_LD130.softTrig();
+	m_LD130.softTrig();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::RzBtnSoftTriggerClick(TObject *Sender)
 {
-	if (RzBtnSoftTrigger->GroupIndex == 0){
-        m_LD130.softTrig();
-	}
-	else {
-		if (RzBtnSoftTrigger->Down){
+	if (RzBtnSoftTrigger->GroupIndex == 0) {
+		m_LD130.softTrig();
+	} else {
+		if (RzBtnSoftTrigger->Down) {
 			TimerAutoTrigger->Interval = edAutoTriggerPeriod->IntValue;
 			TimerAutoTrigger->Enabled = true;
 			RzBtnSoftTrigger->Caption = "Trigger ON";
-		}
-		else {
+		} else {
 			TimerAutoTrigger->Enabled = false;
 			RzBtnSoftTrigger->Caption = "Trigger OFF";
 		}
@@ -514,30 +515,14 @@ void __fastcall TFormMainWindow::RzTabBanksChange(TObject *Sender)
 
 void __fastcall TFormMainWindow::rzbtnSendSequenceClick(TObject *Sender)
 {
-//  TCmdSetSequenceData cmd;
-//  bool bIncrementLength = true;
-//
-//
-//  for (int iStr = 1; iStr <= RzBankSequence->Text.Length(); ++iStr) {
-//  	if (isdigit(RzBankSequence->Text[iStr])) {
-//  		if (bIncrementLength) {
-//  			++cmd.m_sequenceLength;
-//  			bIncrementLength = false;
-//  		}
-//  		cmd.m_sequence[cmd.m_sequenceLength - 1] = RzBankSequence->Text[iStr] - '0';
-//  	} else if (RzBankSequence->Text[iStr] == ',')
-//  		bIncrementLength = true;
-//  }
-//
-//
-//  TCmdSequenceData cmdReply;
-//  TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  if (errCode.m_command == 0) {
-//  }
-//  else {
-//  	lbLog->Items->Add(AnsiString((char*)errCode.m_errorDescription));
-//  }
+	string theValue;
+	for (int iStr = 1; iStr <= RzBankSequence->Text.Length(); ++iStr) {
+		if (isdigit(RzBankSequence->Text[iStr])) {
+			theValue += RzBankSequence->Text[iStr];
+		}
+	}
 
+	m_LD130.setSequence(theValue);
 }
 //---------------------------------------------------------------------------
 
@@ -568,17 +553,11 @@ void __fastcall TFormMainWindow::btnComConfigClick(TObject *Sender)
 
 //---------------------------------------------------------------------------
 void __fastcall TFormMainWindow::TimerUpdateGUITimer(TObject *Sender)
-{/*
-	if (m_hComPort != INVALID_HANDLE_VALUE && m_hComPort) {
-		TCmdGetConfigData cmd;
-		TConfigData cmdReply;
-		TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-		if (errCode.m_command == 0) {
-			if ((cmdReply.m_flags & fifUseBanks) != 0 && cmdReply.m_activeBank <= 3) {
-				RzFieldActiveBank->Caption = "Active Bank:" + AnsiString(cmdReply.m_activeBank);
-			}
-		}
-	}*/
+{
+	if (m_LD130.isConnected()) {
+		unsigned short activeBank = m_LD130.getActiveBank();
+		RzFieldActiveBank->Caption = "Active Bank:" + AnsiString(activeBank);
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -618,9 +597,9 @@ void __fastcall TFormMainWindow::actLoadFromEPROMUpdate(TObject *Sender)
 
 void __fastcall TFormMainWindow::cbComPortDropDown(TObject *Sender)
 {
- RzStatusOperation->Caption = "";
- RzFieldFirmwareVersion->Caption = "";
- RzFieldActiveBank->Caption = "";
+	RzStatusOperation->Caption = "";
+	RzFieldFirmwareVersion->Caption = "";
+	RzFieldActiveBank->Caption = "";
 }
 //---------------------------------------------------------------------------
 

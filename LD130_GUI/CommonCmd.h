@@ -8,7 +8,6 @@
 #ifndef CommonCmd_201012151057
 #define CommonCmd_201012151057
 
-#define GLOBAL_BANK_COUNT 4
 
 struct TCommandErrorOutput {
 	TCommandErrorOutput() {
@@ -26,12 +25,5 @@ struct TCommandErrorOutput {
 	char	m_errorDescription[256];			// the error description
 } ;
 
-// this flags are the same as TFlashInfoFlags
-typedef enum tag_ConfigDataFlags
-{
-	fifUnknown		= 0x0000,
-	fifAutoLoad		= 0x0001,		// automaticaly load the parameters from flash on bootup
-	fifUseBanks		= 0x0002,		// Use banks
-} TConfigDataFlags;
 
 #endif
