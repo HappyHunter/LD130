@@ -72,138 +72,103 @@ __fastcall TFormMainWindow::TFormMainWindow(TComponent* Owner)
 
 void __fastcall TFormMainWindow::TrackBarChange(TObject* Sender)
 {
-//  TRzTrackBar* pTrackBar = dynamic_cast<TRzTrackBar*>(Sender);
-//
-//  if (THeadControlGroup* pGroup = m_headControlInfo.findHeadControlGroupByTrackBar (pTrackBar)) {
-//
-//  	if (!m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex]) {
-//  		m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = true;
-//
-//  		if (pGroup->m_pEdit)
-//  			pGroup->m_pEdit->Value = pTrackBar->Position;	//update the associated trackbar, if specified
-//
-//
-//  		m_headControlInfo.m_updateHead[pGroup->m_headIndex] = true;
-//  		m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = false;
-//  	}
-//  }
+	TRzTrackBar* pTrackBar = dynamic_cast<TRzTrackBar*>(Sender);
+
+	if (THeadControlGroup* pGroup = m_headControlInfo.findHeadControlGroupByTrackBar (pTrackBar)) {
+
+		if (!m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex]) {
+			m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = true;
+
+			if (pGroup->m_pEdit)
+				pGroup->m_pEdit->Value = pTrackBar->Position;	//update the associated trackbar, if specified
+
+
+			m_headControlInfo.m_updateHead[pGroup->m_headIndex] = true;
+			m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = false;
+		}
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::EditChange(TObject* Sender)
 {
-//  TRzNumericEdit* pEdit = dynamic_cast<TRzNumericEdit*>(Sender);
-//  if (THeadControlGroup* pGroup = m_headControlInfo.findHeadControlGroupByEdit (pEdit)) {
-//
-//  	if (!m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex]) {
-//  		m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = true;
-//
-//  		if (pGroup->m_pTrackBar)
-//  			pGroup->m_pTrackBar->Position = pEdit->Value;	//update the associated edit box, if specified
-//
-//
-//  		m_headControlInfo.m_updateHead[pGroup->m_headIndex] = true;
-//  		m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = false;
-//  	}
-//  }
+	TRzNumericEdit* pEdit = dynamic_cast<TRzNumericEdit*>(Sender);
+	if (THeadControlGroup* pGroup = m_headControlInfo.findHeadControlGroupByEdit (pEdit)) {
+
+		if (!m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex]) {
+			m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = true;
+
+			if (pGroup->m_pTrackBar)
+				pGroup->m_pTrackBar->Position = pEdit->Value;	//update the associated edit box, if specified
+
+
+			m_headControlInfo.m_updateHead[pGroup->m_headIndex] = true;
+			m_headControlInfo.m_powerChangingHead[pGroup->m_headIndex] = false;
+		}
+	}
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 {
-//  if (m_headControlInfo.m_updateHead[0]) {
-//  	m_headControlInfo.m_updateHead[0] = false;
-//  	int bankIndex = rzchkEnableBanks->Checked ? RzTabBanks->TabIndex : 0;
-//
-//  	m_bankData[bankIndex].m_headData[0].m_bankId		 = bankIndex;
-//  	m_bankData[bankIndex].m_headData[0].m_outputId 		 = 1;//		// 1 - head 1, 2 - Head 2
-//  	m_bankData[bankIndex].m_headData[0].m_voltage 		 = int(edVoltageHead1->IntValue);		// 0 - 100 Volts
-//  	m_bankData[bankIndex].m_headData[0].m_powerChanel1 	 = int(edChanel1Head1->Value*100.f); // 0 - 100 00% with fixed decimal point at 2 digits
-//  	m_bankData[bankIndex].m_headData[0].m_powerChanel2 	 = int(edChanel2Head1->Value*100.f); // for example the power of 35.23% will be sent as 3523
-//  	m_bankData[bankIndex].m_headData[0].m_powerChanel3 	 = int(edChanel3Head1->Value*100.f); // the power of 99.00% will be sent as 9900
-//  	m_bankData[bankIndex].m_headData[0].m_powerChanel4 	 = int(edChanel4Head1->Value*100.f); // the power of 100.00% will be sent as 10000
-//  	m_bankData[bankIndex].m_headData[0].m_strobeDelay 	 = int(edDelayHead1->IntValue);	// the delay of outcoming light strobe in microseconds
-//  	m_bankData[bankIndex].m_headData[0].m_strobeWidth 	 = int(edWidthHead1->IntValue);	// the duration of outcoming light strobe in microseconds
-//  	m_bankData[bankIndex].m_headData[0].m_triggerEdge 	 = rbRaisingTriggerHead1->Checked ? 0 : 1;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
-//  	m_bankData[bankIndex].m_headData[0].m_triggerId 	 = 3;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-//  	m_bankData[bankIndex].m_headData[0].m_chanelAmplifier= grHead1Amplifier->ItemIndex + 1;	// the amplification value 1-5
-//
-//  	char cmdBuf[1024] = {0};
-//  	// setbankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier
-//  	_snprintf (cmdBuf, sizeof(cmdBuf) / sizeof(cmdBuf[0]), "setbankdata,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
-//  			   bankIndex,
-//  			   1,									// 1 - head 1, 2 - Head 2
-//  			   int(edVoltageHead1->IntValue),		// 0 - 100 Volts
-//  			   int(edChanel1Head1->Value*100.f), 	// 0 - 100 00% with fixed decimal point at 2 digits
-//  			   int(edChanel2Head1->Value*100.f),	// for example the power of 35.23% will be sent as 3523
-//  			   int(edChanel3Head1->Value*100.f),	// the power of 99.00% will be sent as 9900
-//  			   int(edChanel4Head1->Value*100.f),	// the power of 100.00% will be sent as 10000
-//  			   int(edDelayHead1->IntValue),			// the delay of outcoming light strobe in microseconds
-//  			   int(edWidthHead1->IntValue),			// the duration of outcoming light strobe in microseconds
-//  			   int(rbRaisingTriggerHead1->Checked ? 0 : 1),	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
-//  			   3,									// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-//  			   grHead1Amplifier->ItemIndex + 1		// the amplification value 1-5
-//  			   );
-//
-//  	m_conMan
-//  	TCommandErrorOutput retCode = m_conMan.send(cmdBuf);
-//
-//  	if (retCode.hasError()) {
-//  		RzFieldFirmwareVersion->Caption = "ERROR";
-//  	}
-//
-//  	THeadStatus cmdReply;
-//  	TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  	if (errCode.m_command == 0) {
-//  		m_headStatus[0] = cmdReply;
-//  	}
-//  	else {
-//  		lbLog->Items->Add(AnsiString((char*)errCode.m_errorDescription));
-//  	}
-//  }
-//
-//  if (m_headControlInfo.m_updateHead[1]) {
-//  	m_headControlInfo.m_updateHead[1] = false;
-//  	int bankIndex = rzchkEnableBanks->Checked ? RzTabBanks->TabIndex : 0;
-//
-//  	TCmdSetBankData cmd;
-//  	m_bankData[bankIndex].m_headData[1].m_bankId		= cmd.m_bankId			= bankIndex;
-//  	m_bankData[bankIndex].m_headData[1].m_outputId 		= cmd.m_outputId		= 2;//		// 1 - head 1, 2 - Head 2
-//  	m_bankData[bankIndex].m_headData[1].m_voltage 		= cmd.m_voltage			= int(edVoltageHead2->IntValue);		// 0 - 100 Volts
-//  	m_bankData[bankIndex].m_headData[1].m_powerChanel1 	= cmd.m_powerChanel1	= int(edChanel1Head2->Value*100.f); // 0 - 100 00% with fixed decimal point at 2 digits
-//  	m_bankData[bankIndex].m_headData[1].m_powerChanel2 	= cmd.m_powerChanel2	= int(edChanel2Head2->Value*100.f); // for example the power of 35.23% will be sent as 3523
-//  	m_bankData[bankIndex].m_headData[1].m_powerChanel3 	= cmd.m_powerChanel3	= int(edChanel3Head2->Value*100.f); // the power of 99.00% will be sent as 9900
-//  	m_bankData[bankIndex].m_headData[1].m_powerChanel4 	= cmd.m_powerChanel4	= int(edChanel4Head2->Value*100.f); // the power of 100.00% will be sent as 10000
-//  	m_bankData[bankIndex].m_headData[1].m_strobeDelay 	= cmd.m_strobeDelay		= int(edDelayHead2->IntValue);	// the delay of outcoming light strobe in microseconds
-//  	m_bankData[bankIndex].m_headData[1].m_strobeWidth 	= cmd.m_strobeWidth		= int(edWidthHead2->IntValue);	// the duration of outcoming light strobe in microseconds
-//  	m_bankData[bankIndex].m_headData[1].m_triggerEdge 	= cmd.m_triggerEdge		= rbRaisingTriggerHead2->Checked ? 0 : 1;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
-//  	m_bankData[bankIndex].m_headData[1].m_triggerId 	= cmd.m_triggerId		= 3;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-//  	m_bankData[bankIndex].m_headData[1].m_chanelAmplifier= cmd.m_chanelAmplifier = grHead2Amplifier->ItemIndex + 1;	// the amplification value 1-5
-//
-//  	THeadStatus cmdReply;
-//  	TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  	if (errCode.m_command == 0) {
-//  		m_headStatus[1] = cmdReply;
-//  	}
-//  	else {
-//  		lbLog->Items->Add(AnsiString((char*)errCode.m_errorDescription));
-//  	}
-//  }
-//
-//  if (m_updateActiveBank) {
-//  	m_updateActiveBank = false;
-//  	TCmdSetActiveBank cmd;
-//  	cmd.m_activeBank = m_activeBank;
-//
-//  	TCmdActiveBank cmdReply;
-//  	TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  	if (errCode.m_command == 0) {
-//  		m_activeBank = cmdReply.m_activeBank;
-//  	}
-//  	else {
-//  		lbLog->Items->Add(AnsiString((char*)errCode.m_errorDescription));
-//  	}
-//  }
+	const int bankIndex = rzchkEnableBanks->Checked ? RzTabBanks->TabIndex+1 : 1;
+	bool bUpdated = false;
+	if (m_headControlInfo.m_updateHead[0]) {
+		m_headControlInfo.m_updateHead[0] = false;
+
+		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
+			bankIndex,
+			1,								  // 1 - head 1, 2 - Head 2
+			int(edVoltageHead1->IntValue),	  // 0 - 100 Volts
+			int(edChanel1Head1->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
+			int(edChanel2Head1->Value*100.f), // for example the power of 35.23% will be sent as 3523
+			int(edChanel3Head1->Value*100.f), // the power of 99.00% will be sent as 9900
+			int(edChanel4Head1->Value*100.f), // the power of 100.00% will be sent as 10000
+			int(edDelayHead1->IntValue),	  // the delay of outcoming light strobe in microseconds
+			int(edWidthHead1->IntValue),	  // the duration of outcoming light strobe in microseconds
+			rbRaisingTriggerHead1->Checked ? 0 : 1,	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+			3,	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+			grHead1Amplifier->ItemIndex + 1	// the amplification value 1-5
+		);
+
+		if (retCode.hasError()) {
+			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
+		}
+		bUpdated = true;
+	}
+	if (m_headControlInfo.m_updateHead[1]) {
+		m_headControlInfo.m_updateHead[1] = false;
+		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
+			bankIndex,
+			2,								  // 1 - head 1, 2 - Head 2
+			int(edVoltageHead2->IntValue),	  // 0 - 100 Volts
+			int(edChanel1Head2->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
+			int(edChanel2Head2->Value*100.f), // for example the power of 35.23% will be sent as 3523
+			int(edChanel3Head2->Value*100.f), // the power of 99.00% will be sent as 9900
+			int(edChanel4Head2->Value*100.f), // the power of 100.00% will be sent as 10000
+			int(edDelayHead2->IntValue),	  // the delay of outcoming light strobe in microseconds
+			int(edWidthHead2->IntValue),	  // the duration of outcoming light strobe in microseconds
+			rbRaisingTriggerHead2->Checked ? 0 : 1,	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+			3,	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+			grHead2Amplifier->ItemIndex + 1	// the amplification value 1-5
+		);
+
+		if (retCode.hasError()) {
+			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
+		}
+		bUpdated = true;
+	}
+
+	if (m_updateActiveBank) {
+		m_updateActiveBank = false;
+		m_LD130.setActiveBank(RzTabBanks->TabIndex+1);
+		bUpdated = true;
+	}
+
+	if (bUpdated) {
+		m_LD130.getHeadStatus(1);
+		m_LD130.getHeadStatus(2);
+	}
 }
 //---------------------------------------------------------------------------
 
@@ -347,171 +312,116 @@ void __fastcall TFormMainWindow::rbFallingTriggerHead2Click(TObject *Sender)
 
 void TFormMainWindow::initControlsFromController()
 {
-//  TCmdGetConfigData cmd;
-//  TConfigData cmdReply;
-//  TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  if (errCode.m_command == 0) {
-//  	rzchkEnableBanks->Checked = (cmdReply.m_flags & fifUseBanks) != 0;
-//  	if (rzchkEnableBanks->Checked && cmdReply.m_activeBank <= 3) {
-//  		RzTabBanks->TabIndex = m_activeBank = cmdReply.m_activeBank;
-//  	}
-//
-//  	RzFieldActiveBank->Caption = AnsiString(m_activeBank);
-//  }
-
-	for (int i = 0; i < 4; ++i) {
-		getBankData(i);
-	}
-	getBankSequence();
-
 	updateControlsForSelectedBank();
-
-//	TCmdGetHeadData cmd;
-//	cmd.m_outputId		= 1;//		// 1 - head 1, 2 - Head 2
-//
-//	THeadData cmdReply;
-//	TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//
-//	if (cmdReply.m_outputId != cmd.m_outputId)
-//		return ;
 }
 
 //---------------------------------------------------------------------------
 
 void TFormMainWindow::updateControlsForSelectedBank()
 {
-//  //------------------------------------------------
-//  // Head 1
-//  //------------------------------------------------
-//
-//  setTrackBarSafely(tbVoltageHead1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_voltage);
-//
-//  setPowerSafely(tbChanel1Head1, edChanel1Head1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_powerChanel1/100.f);	// 0 - 100 00% with fixed decimal point at 2 digits
-//  setPowerSafely(tbChanel2Head1, edChanel2Head1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_powerChanel2/100.f);	// for example the power of 35.23% will be sent as 3523
-//  setPowerSafely(tbChanel3Head1, edChanel3Head1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_powerChanel3/100.f);	// the power of 99.00% will be sent as 9900
-//  setPowerSafely(tbChanel4Head1, edChanel4Head1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_powerChanel4/100.f);	// the power of 100.00% will be sent as 10000
-//
-//  setNumericEditSafely(edDelayHead1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_strobeDelay);
-//  setNumericEditSafely(edWidthHead1, m_bankData[RzTabBanks->TabIndex].m_headData[0].m_strobeWidth);
-//  switch (m_bankData[RzTabBanks->TabIndex].m_headData[0].m_triggerEdge) {
-//  case 0:
-//  	rbRaisingTriggerHead1->Checked = true;
-//  	break;
-//
-//  case 1:
-//  	rbFallingTriggerHead1->Checked = true;
-//  	break;
-//
-//  }
-//
-//  switch (m_bankData[RzTabBanks->TabIndex].m_headData[0].m_triggerId) {
-//  case 1:
-//  	rgTriggerSourceHead1->ItemIndex = 1;
-//  	break;
-//
-//  case 2:
-//  	rgTriggerSourceHead1->ItemIndex = 2;
-//  	break;
-//
-//  case 3:
-//  	rgTriggerSourceHead1->ItemIndex = 3;
-//  	break;
-//  }
-//
-//  if (m_bankData[RzTabBanks->TabIndex].m_headData[0].m_chanelAmplifier > 0 && m_bankData[RzTabBanks->TabIndex].m_headData[0].m_chanelAmplifier <= 5)
-//  	grHead1Amplifier->ItemIndex  = m_bankData[RzTabBanks->TabIndex].m_headData[0].m_chanelAmplifier - 1;
-//
-//  pnlOverCurrentHead1Chanel1->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[0].m_statusChanel1 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead1Chanel2->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[0].m_statusChanel2 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead1Chanel3->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[0].m_statusChanel3 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead1Chanel4->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[0].m_statusChanel4 ? clRed : clGreen) : clBackground;
-//
-//  //------------------------------------------------
-//  // Head 2
-//  //------------------------------------------------
-//
-//  setTrackBarSafely(tbVoltageHead2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_voltage);
-//
-//  setPowerSafely(tbChanel1Head2, edChanel1Head2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_powerChanel1/100.f);	// 0 - 100 00% with fixed decimal point at 2 digits
-//  setPowerSafely(tbChanel2Head2, edChanel2Head2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_powerChanel2/100.f);	// for example the power of 35.23% will be sent as 3523
-//  setPowerSafely(tbChanel3Head2, edChanel3Head2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_powerChanel3/100.f);	// the power of 99.00% will be sent as 9900
-//  setPowerSafely(tbChanel4Head2, edChanel4Head2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_powerChanel4/100.f);	// the power of 100.00% will be sent as 10000
-//
-//  setNumericEditSafely(edDelayHead2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_strobeDelay);
-//  setNumericEditSafely(edWidthHead2, m_bankData[RzTabBanks->TabIndex].m_headData[1].m_strobeWidth);
-//  switch (m_bankData[RzTabBanks->TabIndex].m_headData[1].m_triggerEdge) {
-//  case 0:
-//  	rbRaisingTriggerHead2->Checked = true;
-//  	break;
-//
-//  case 1:
-//  	rbFallingTriggerHead2->Checked = true;
-//  	break;
-//
-//  }
-//
-//  switch (m_bankData[RzTabBanks->TabIndex].m_headData[1].m_triggerId) {
-//  case 1:
-//  	rgTriggerSourceHead2->ItemIndex = 1;
-//  	break;
-//
-//  case 2:
-//  	rgTriggerSourceHead2->ItemIndex = 2;
-//  	break;
-//
-//  case 3:
-//  	rgTriggerSourceHead2->ItemIndex = 3;
-//  	break;
-//  }
-//
-//  if (m_bankData[RzTabBanks->TabIndex].m_headData[1].m_chanelAmplifier > 0 && m_bankData[RzTabBanks->TabIndex].m_headData[1].m_chanelAmplifier <= 5)
-//  	grHead2Amplifier->ItemIndex  = m_bankData[RzTabBanks->TabIndex].m_headData[1].m_chanelAmplifier - 1;
-//
-//  pnlOverCurrentHead2Chanel1->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[1].m_statusChanel1 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead2Chanel2->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[1].m_statusChanel2 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead2Chanel3->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[1].m_statusChanel3 ? clRed : clGreen) : clBackground;
-//  pnlOverCurrentHead2Chanel4->Color = (m_activeBank == RzTabBanks->TabIndex) ? (m_headStatus[1].m_statusChanel4 ? clRed : clGreen) : clBackground;
-//
-//  m_headControlInfo.m_updateHead[0] = false;
-//  m_headControlInfo.m_updateHead[1] = false;
-//
+	//------------------------------------------------
+	// Head 1
+	//------------------------------------------------
+
+	TBankHeadData theHeadData = m_LD130.getBankHeadData(RzTabBanks->TabIndex+1, 1);
+
+	setTrackBarSafely(tbVoltageHead1, theHeadData.m_voltage);
+
+	setPowerSafely(tbChanel1Head1, edChanel1Head1, theHeadData.m_powerChanel1/100.f);	// 0 - 100 00% with fixed decimal point at 2 digits
+	setPowerSafely(tbChanel2Head1, edChanel2Head1, theHeadData.m_powerChanel2/100.f);	// for example the power of 35.23% will be sent as 3523
+	setPowerSafely(tbChanel3Head1, edChanel3Head1, theHeadData.m_powerChanel3/100.f);	// the power of 99.00% will be sent as 9900
+	setPowerSafely(tbChanel4Head1, edChanel4Head1, theHeadData.m_powerChanel4/100.f);	// the power of 100.00% will be sent as 10000
+
+	setNumericEditSafely(edDelayHead1, theHeadData.m_strobeDelay);
+	setNumericEditSafely(edWidthHead1, theHeadData.m_strobeWidth);
+	switch (theHeadData.m_triggerEdge) {
+	case 0:
+		rbRaisingTriggerHead1->Checked = true;
+		break;
+
+	case 1:
+		rbFallingTriggerHead1->Checked = true;
+		break;
+
+	}
+
+	switch (theHeadData.m_triggerId) {
+	case 1:
+		rgTriggerSourceHead1->ItemIndex = 1;
+		break;
+
+	case 2:
+		rgTriggerSourceHead1->ItemIndex = 2;
+		break;
+
+	case 3:
+		rgTriggerSourceHead1->ItemIndex = 3;
+		break;
+	}
+
+	if (theHeadData.m_chanelAmplifier > 0 && theHeadData.m_chanelAmplifier <= 5)
+		grHead1Amplifier->ItemIndex  = theHeadData.m_chanelAmplifier - 1;
+
+	THeadStatus theHeadStatus = m_LD130.getHeadStatus(1);
+
+	pnlOverCurrentHead1Chanel1->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel1 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead1Chanel2->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel2 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead1Chanel3->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel3 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead1Chanel4->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel4 ? clRed : clGreen) : clBackground;
+
+	//------------------------------------------------
+	// Head 2
+	//------------------------------------------------
+
+	theHeadData = m_LD130.getBankHeadData(RzTabBanks->TabIndex+1, 2);
+	setTrackBarSafely(tbVoltageHead2, theHeadData.m_voltage);
+
+	setPowerSafely(tbChanel1Head2, edChanel1Head2, theHeadData.m_powerChanel1/100.f);	// 0 - 100 00% with fixed decimal point at 2 digits
+	setPowerSafely(tbChanel2Head2, edChanel2Head2, theHeadData.m_powerChanel2/100.f);	// for example the power of 35.23% will be sent as 3523
+	setPowerSafely(tbChanel3Head2, edChanel3Head2, theHeadData.m_powerChanel3/100.f);	// the power of 99.00% will be sent as 9900
+	setPowerSafely(tbChanel4Head2, edChanel4Head2, theHeadData.m_powerChanel4/100.f);	// the power of 100.00% will be sent as 10000
+
+	setNumericEditSafely(edDelayHead2, theHeadData.m_strobeDelay);
+	setNumericEditSafely(edWidthHead2, theHeadData.m_strobeWidth);
+	switch (theHeadData.m_triggerEdge) {
+	case 0:
+		rbRaisingTriggerHead2->Checked = true;
+		break;
+
+	case 1:
+		rbFallingTriggerHead2->Checked = true;
+		break;
+
+	}
+
+	switch (theHeadData.m_triggerId) {
+	case 1:
+		rgTriggerSourceHead2->ItemIndex = 1;
+		break;
+
+	case 2:
+		rgTriggerSourceHead2->ItemIndex = 2;
+		break;
+
+	case 3:
+		rgTriggerSourceHead2->ItemIndex = 3;
+		break;
+	}
+
+	if (theHeadData.m_chanelAmplifier > 0 && theHeadData.m_chanelAmplifier <= 5)
+		grHead2Amplifier->ItemIndex  = theHeadData.m_chanelAmplifier - 1;
+
+	theHeadStatus = m_LD130.getHeadStatus(2);
+
+	pnlOverCurrentHead2Chanel1->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel1 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead2Chanel2->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel2 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead2Chanel3->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel3 ? clRed : clGreen) : clBackground;
+	pnlOverCurrentHead2Chanel4->Color = ((m_LD130.getActiveBank() -1) == RzTabBanks->TabIndex) ? (theHeadStatus.m_statusChanel4 ? clRed : clGreen) : clBackground;
+
+	m_headControlInfo.m_updateHead[0] = false;
+	m_headControlInfo.m_updateHead[1] = false;
+
 }
-
-
-
-//---------------------------------------------------------------------------
-void TFormMainWindow::getBankData(unsigned char aBankId)
-{
-//  TCmdGetBankData cmd;
-//  TBankHeadData cmdReply;
-//  TCommandErrorOutput errCode;
-//
-//  cmd.m_bankId		= aBankId;//
-//
-//  //-----------------------------------------
-//  // Head 1
-//
-//  cmd.m_outputId		= 1;
-//
-//  errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//
-//  if (cmdReply.m_outputId != cmd.m_outputId)
-//  	return ;
-//
-//  m_bankData[aBankId].m_headData[0] = cmdReply;
-//
-//  //-----------------------------------------
-//  // Head 2
-//
-//  cmd.m_outputId		= 2;
-//  errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//
-//  if (cmdReply.m_outputId != cmd.m_outputId)
-//  	return ;
-//
-//  m_bankData[aBankId].m_headData[1] = cmdReply;
-}
-
 
 //---------------------------------------------------------------------------
 void TFormMainWindow::setTrackBarSafely(TRzTrackBar * pTrackBar, int newValue)
@@ -656,24 +566,6 @@ void __fastcall TFormMainWindow::btnComConfigClick(TObject *Sender)
 //---------------------------------------------------------------------------
 
 
-void TFormMainWindow::getBankSequence()
-{
-//  TCmdGetSequenceData cmd;
-//  TCmdSequenceData cmdReply;
-//  TCommandErrorOutput errCode = sendCommand(&cmd, sizeof(cmd), &cmdReply, sizeof(cmdReply));
-//  if (errCode.m_command == 0) {
-//  	AnsiString str;
-//  	for (int i = 0; i < cmdReply.m_sequenceLength && i < 128; ++i) {
-//  		if (cmdReply.m_sequence[i] > 5)
-//  			continue;
-//
-//  		if (str.Length())
-//  			str += ",";
-//  		str += AnsiString(int(cmdReply.m_sequence[i]));
-//  	}
-//  	RzBankSequence->Text = str;
-//  }
-}
 //---------------------------------------------------------------------------
 void __fastcall TFormMainWindow::TimerUpdateGUITimer(TObject *Sender)
 {/*

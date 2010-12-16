@@ -1,6 +1,6 @@
 object FormMainWindow: TFormMainWindow
-  Left = 219
-  Top = 214
+  Left = 249
+  Top = 65
   Width = 800
   Height = 600
   Caption = 'LD130 Control'

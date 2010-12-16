@@ -295,11 +295,6 @@ private:	// User declarations
 
 	void setPowerSafely(TRzTrackBar * pTrackBar, TRzNumericEdit* pEdit, float newValue);
 
-	void getBankData(unsigned char aBankId);
-
-	void getBankSequence();
-
-
 	void updateControlsForSelectedBank();
 
 	TLD130Impl	m_LD130;

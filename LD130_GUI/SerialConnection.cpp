@@ -178,7 +178,7 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 
 
 //-----------------------------------------------------------------------------------------
-TCommandErrorOutput TSerialConMan::send(const char* pCmd)
+TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 {
 	TCommandErrorOutput retValue;
 

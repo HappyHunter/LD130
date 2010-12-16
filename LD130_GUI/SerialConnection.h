@@ -20,7 +20,7 @@ public:
 	TSerialConMan();
 	~TSerialConMan();
 
-	TCommandErrorOutput send(const char* pCmd);
+	TCommandErrorOutput send(const char* pCmd) const;
 
 	TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TSerialOnLogEvent pLogEvent = 0);
 
@@ -31,8 +31,8 @@ private:
 	HANDLE 		m_hComPort;
 	int			m_UartID;
 
-	OVERLAPPED	m_overlappedOut;
-	OVERLAPPED	m_overlappedIn;
+	mutable OVERLAPPED	m_overlappedOut;
+	mutable OVERLAPPED	m_overlappedIn;
 
 	TSerialOnLogEvent m_pLogEvent;
 };
