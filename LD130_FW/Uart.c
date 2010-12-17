@@ -44,6 +44,7 @@ void Start_UART1 (void)
 {
 	unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
 
+	// create a semaphore
 	OS_Csem_Create(Uart1_Msg);
 
 
@@ -160,6 +161,7 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 				// check if it is endl symbol, if yes then increment message semaphore counter
 				if (ch == 0x0d)
 				{
+					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart1_Msg);
 				}
 
@@ -182,8 +184,9 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 //-----------------------------------------------------------------------------------------
 void outputChar_UART1(char ch)
 {
-	while (U1STAbits.UTXBF)
+	while (U1STAbits.UTXBF) {
 		ClrWdt();
+	}
 	U1TXREG = ch;
 }
 
@@ -192,7 +195,7 @@ void outputChar_UART1(char ch)
 //-----------------------------------------------------------------------------------------
 void outputString_UART1(const char* pCh)
 {
-	for (; *pCh; ++pCh) {
+	for (; pCh && *pCh; ++pCh) {
 		outputChar_UART1(*pCh);
 	}
 }
@@ -331,10 +334,6 @@ void Start_UART2 (void)
 	Uart2.m_UartID = 2;        	// the ID is 2
 	Uart2.m_baud_rate = Uart2_Baud_Rate;
 
-	for (;;)
-    {
-        OS_Csem_Wait (Uart2_Msg);	// now wait here untill any data arrives to UART
-    }
 }
 
 
@@ -368,6 +367,7 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 				// check if it is endl symbol, if yes then increment message semaphore counter
 				if (ch == 0x0d)
 				{
+					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart2_Msg);
 				}
 
@@ -389,8 +389,10 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 //-----------------------------------------------------------------------------------------
 void outputChar_UART2(char ch)
 {
-	while (U2STAbits.UTXBF)
+	while (U2STAbits.UTXBF) {
 		ClrWdt();
+		OS_Yield(); // Unconditional context switching
+	}
 	U2TXREG = ch;
 }
 
@@ -399,7 +401,7 @@ void outputChar_UART2(char ch)
 //-----------------------------------------------------------------------------------------
 void outputString_UART2(const char* pCh)
 {
-	for (; *pCh; ++pCh) {
+	for (; pCh && *pCh; ++pCh) {
 		outputChar_UART2(*pCh);
 	}
 }

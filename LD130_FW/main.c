@@ -9,6 +9,8 @@
 #include "Common.h"
 #include "Uart.h"
 #include "Parser.h"
+#include "CmdManager.h"
+
 
 // uses watchdog timer
 _FOSC(XT_PLL16 & CSW_FSCM_OFF);
@@ -19,96 +21,6 @@ void Init (void);
 void TaskBlink();
 
 #define TEST_TEST_TEST
-
-//-----------------------------------------------------------------------------------------
-// reads the character from UART buffer
-// and advances the pointer
-// if we reach the end of message the function returns 0
-// it handles the wrap around of the message buffer
-//
-// Also it increments the current position of the parser pointer
-//-----------------------------------------------------------------------------------------
-unsigned char getChFromBuf(TUartBuff* pUart, unsigned short* pMsgBegin, unsigned short* pMsgEnd, unsigned char* pCh)
-{
-	unsigned char ch = 0;
-
-	// if end of the message
-	if (*pMsgBegin == *pMsgEnd)
-		return 0;
-
-	// read the character from the buffer
-	*pCh = pUart->m_RXBuffer[*pMsgBegin];
-	// increment the pointer
-	++(*pMsgBegin);
-
-	// check for wrap around
-	if (*pMsgBegin >= RX_BUFFER_MAX)
-		*pMsgBegin = 0;
-
-	// increment the parser pointer
-//	++pUart->m_RXErrorPos;
-
-	return 1;
-}
-
-void Task_UART1 (void)
-{
-	char RXBuffer[MAX_VALUES_IN_PATTERN*STRING_VALUE_LENGTH + 1];
-	unsigned short iPos;
-	// store the begin and the end
-	unsigned short msgBegin = 0;	// the begining of the message
-	unsigned short msgEnd = 0;	// the end of the message
-
-	unsigned short msgCmdBegin = 0;	// the begining of the message
-	unsigned short msgCmdEnd = 0;		// the end of the message
-
-	unsigned char ch = 0;		// the current character being processed
-
-	Start_UART1();
-
-	for (;;)
-    {
-        OS_Csem_Wait (Uart1_Msg);	// now wait here untill any data arrives to UART
-		iPos = 0;
-
-		// no characters arrived since last check
-		if (Uart1.m_RXHead == Uart1.m_RXTail)
-			continue;
-
-		// store the pointers to the beginig and and of the current message
-		// we will be working with the local variables
-		// the idea is to copy the beginig and the end of the message to the local variable and
-		// then work with them, while
-		// there can be another message arriving to the UART
-		msgCmdBegin = msgBegin = Uart1.m_RXHead;
-		msgCmdEnd = msgEnd = Uart1.m_RXTail;
-		// reset the error flags and error position
-//		Uart1.m_RXErrorPos = 0;
-//		Uart1.m_RXErrorFlags = 0;
-
-		do {
-			if (getChFromBuf(&Uart1, &msgCmdBegin, &msgCmdEnd, &ch)) {
-				RXBuffer[iPos] = ch;
-			}
-		} while (ch != 0 && ch != '\n' && iPos < sizeof(RXBuffer));
-		RXBuffer[iPos] = 0;
-		outputString_UART1("-->");
-		outputString_UART1(RXBuffer);
-		outputString_UART1("\r\n");
-    }
-
-}
-void Task_UART2 (void)
-{
-	Start_UART2();
-
-	for (;;)
-    {
-        OS_Csem_Wait (Uart2_Msg);	// now wait here untill any data arrives to UART
-    }
-
-}
-
 
 
 int main (void)
@@ -122,9 +34,7 @@ int main (void)
     //------------------------------------------------------------------------------
     //  Init the components
     //------------------------------------------------------------------------------
-	#ifndef TEST_TEST_TEST
 	InitializeParser();
-	#endif
 
     //------------------------------------------------------------------------------
     //  Init RTOS
@@ -139,8 +49,7 @@ int main (void)
 	// priority 0 - Highest, 7 - lowest
     OS_Task_Create(2, Task_UART1);
     OS_Task_Create(2, Task_UART2);
-    OS_Task_Create(2, TaskBlink);
-
+    OS_Task_Create(7, TaskBlink);
 
     //------------------------------------------------------------------------------
     //  Enable interrupts and start OS
@@ -237,6 +146,8 @@ Pin and register map of dsPIC30F6010A
 
 */
 
+//-----------------------------------------------------------------------------------------
+// Hardware Init
 void Init (void)
 {
 	_ADON = 0;			// disable analog module
@@ -257,18 +168,21 @@ void Init (void)
 }
 
 
+//-----------------------------------------------------------------------------------------
+//
+// Test task for blinking LEDs to show the activity
 void TaskBlink()
 {
-	unsigned short iPeriod = 0;
-	unsigned char iPeriod2 = 0;
+	static unsigned short iPeriod = 0;
+	static unsigned char  iPeriod2 = 0;
 
 	_ADON = 0;			// disable analog module
 	ADPCFG = 0xFFFF;	// all pins are digital input/ouput pins
 
 	// pins Init section
 	//----------------------------------------
-	TRISE = 0;				// use all pins as output
-	TRISD = 0;				// use all pins as output
+//	TRISE = 0;				// use all pins as output
+//	TRISD = 0;				// use all pins as output
 
 	_TRISD4 = 0;
 	_TRISD5 = 0;
@@ -278,6 +192,7 @@ void TaskBlink()
 
 	for (;;) {
 		ClrWdt();
+		OS_Yield(); // Unconditional context switching
 		if (++iPeriod == 0) {
 			_LATD5 = !_LATD5;
 			if (++iPeriod2 > 20) {

@@ -16,12 +16,13 @@
 //------------------------------------------------------------------------------
 void Task_UART1 (void)
 {
-	char RXBuffer[MAX_VALUES_IN_PATTERN*STRING_VALUE_LENGTH + 1];
-	unsigned short iPos;
+	static char RXBuffer[MAX_VALUES_IN_PATTERN*STRING_VALUE_LENGTH + 1];
+	// position of the last character in RXBuffer
+	static unsigned short iPos;
 	// store the begin and the end
-	unsigned short msgCmdEnd = 0;		// the end of the message
+	static unsigned short msgCmdEnd = 0;	// the end of the message
 
-	unsigned char ch = 0;		// the current character being processed
+	static unsigned char ch = 0;			// the current character being processed
 
 	Start_UART1();
 
@@ -29,15 +30,15 @@ void Task_UART1 (void)
     {
         OS_Csem_Wait (Uart1_Msg);	// now wait here untill any data arrives to UART
 
-		// clear the pointer to the beginning of a buffer
-		iPos = 0;
-
 		// store the pointers to the beginig and and of the current message
 		// we will be working with the local variables
-		// the idea is to copy the beginig and the end of the message to the local variable and
-		// then work with them, while
+		// the idea is to copy the end of the message to the local variable and
+		// then work with it, while
 		// there can be another message arriving to the UART
 		msgCmdEnd = Uart1.m_RXTail;
+
+		// clear the pointer to the beginning of a buffer
+		iPos = 0;
 
 		do {
 			// if end of the message
@@ -55,17 +56,27 @@ void Task_UART1 (void)
 				Uart1.m_RXHead = 0;
 
 			// only alphanumeric characters or comma ',' or period '.'
-			if (isalnum (ch) || ch == ','|| ch == '.')
-				RXBuffer[iPos++] = ch;
+			if (isalnum (ch) || ch == ','|| ch == '.') {
+				RXBuffer[iPos] = ch;
+				++iPos;
+			}
 
-		} while (ch != '\n' && iPos < sizeof(RXBuffer));
+		} while (ch != '\n' && iPos < (sizeof(RXBuffer)-1));
 
 		// terminate the string
 		RXBuffer[iPos] = 0;
 
-		// echo it back for debug
-		outputString_UART1("-->");
+		// parse the incoming text
+		outputString_UART1(">");
 		outputString_UART1(RXBuffer);
+		outputString_UART1(">");
+		if (ParseSentence(RXBuffer)) {
+			outputString_UART1(GetCmdName());
+			outputString_UART1(":OK");
+		} else {
+			outputString_UART1(RXBuffer);
+			outputString_UART1(":ERR");
+		}
 		outputString_UART1("\r\n");
     }
 
