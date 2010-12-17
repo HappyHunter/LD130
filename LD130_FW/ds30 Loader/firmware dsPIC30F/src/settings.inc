@@ -110,7 +110,7 @@
 ; Advanced settings
 ;------------------------------------------------------------------------------		
 		.equ	PROT_GOTO,		1				;xxx protect goto at 0x00
-		.equ 	PROT_BL, 		1				;xxx protect bootloader
+		;.equ 	PROT_BL, 		1				;xxx protect bootloader
 		
 		.equ	BLPLR,			8				;bootloader placement, rows from end
 		.equ	BLSIZER,		8				;bootloader size [rows]

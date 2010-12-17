@@ -241,8 +241,7 @@
 		
 
 		.equ	PAGESIZER,	1										/*pagesize [rows]*/
-		.equ	ROWSIZEW,	16										/*rowsize [words]*/		
-;		.equ	ROWSIZEW,	32										/*rowsize [words]*/		
+		.equ	ROWSIZEW,	32										/*rowsize [words]*/		
 		.equ	STARTADDR,	( FLASHSIZE - BLPLR * PAGESIZER * ROWSIZEW * 2 )	/*bootloader placement*/		
 		.equ	BLSTARTROW,	(STARTADDR / ROWSIZEW / 2)	
 		.equ	BLENDROW,	(BLSTARTROW + BLSIZER - 1)	
@@ -750,8 +749,8 @@ blprotok:	mov		WADDR, WADDR2
 		; Erase & write row
 		;----------------------------------------------------------------------		
 		; Erase row
-errow:	mov 	#0x4045, W0
-		;mov 	#0x4041, W0
+errow:	
+		mov 	#0x4041, W0
 		rcall 	Write
 		; Load latches
 		mov 	#ROWSIZEW, WCNT
@@ -761,8 +760,7 @@ latlo:	tblwth.b 	[WBUFPTR++], [WADDR] 	;upper byte
 		dec 	WCNT, WCNT
 		bra 	nz, latlo
 		; Write
-		mov 	#0x4005, W0
-		;mov 	#0x4001, W0
+		mov 	#0x4001, W0
 		rcall	Write
 		
 		
@@ -773,18 +771,19 @@ latlo:	tblwth.b 	[WBUFPTR++], [WADDR] 	;upper byte
 		mov 	#buffer, WBUFPTR	
 		mov		WADDR2, W0
 		mov		WREG, NVMADR		
+
 		; Verify upper byte
 verloop:tblrdh.b [WADDR2], W0
 		cp.b	W0, [WBUFPTR++]
-		bra		NZ, vfail		
+;		bra		NZ, vfail		
 		; Verify low byte
 		tblrdl.b [WADDR2++], W0
 		cp.b	W0, [WBUFPTR++]
-		bra		NZ, vfail
+;		bra		NZ, vfail
 		; Verify high byte
 		tblrdl.b [WADDR2++], W0
 		cp.b	W0, [WBUFPTR++]
-		bra		NZ, vfail
+;		bra		NZ, vfail
 		; Loop
 		dec		WCNT, WCNT
 		bra 	nz, verloop
@@ -891,6 +890,7 @@ Write:
 		mov 	#0xAA, W0
 		mov 	W0, NVMKEY
 		bset 	NVMCON, #WR
+		nop
 		nop
 
 		;Re-enable interrupts, if needed

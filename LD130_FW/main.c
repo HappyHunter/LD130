@@ -15,6 +15,8 @@
 // uses watchdog timer
 _FOSC(XT_PLL16 & CSW_FSCM_OFF);
 _FWDT(WDT_OFF & WDTPSA_64 & WDTPSB_16);
+_FBORPOR(PBOR_OFF & MCLR_EN);	//	;xxx power-on reset, brown-out reset, master clear
+//_FGS(CODE_PROT_OFF)			//	;xxx code protection
 
 void Init (void);
 

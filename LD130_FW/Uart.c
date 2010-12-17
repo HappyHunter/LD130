@@ -42,7 +42,7 @@ OST_CSEM  Uart1_Msg;
  ********************************************************************************/
 void Start_UART1 (void)
 {
-	unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
+	static unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
 
 	// create a semaphore
 	OS_Csem_Create(Uart1_Msg);
@@ -107,7 +107,7 @@ void Start_UART1 (void)
 //		}
 //	}
 
-	Uart1_Baud_Rate = 9600;
+	Uart1_Baud_Rate = A_BAUDE_RATE;
 
 	// TBD read eprom
 	U1BRG = Baud_Rate(Uart1_Baud_Rate);
@@ -151,15 +151,11 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {
-				unsigned char ch;
-
 				// read the character from FIFO
-				ch = U1RXREG;
-
-				Uart1.m_RXBuffer[Uart1.m_RXTail] = ch;
+				Uart1.m_RXBuffer[Uart1.m_RXTail] = U1RXREG;
 
 				// check if it is endl symbol, if yes then increment message semaphore counter
-				if (ch == 0x0d)
+				if (Uart1.m_RXBuffer[Uart1.m_RXTail] == 0x0d)
 				{
 					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart1_Msg);
@@ -249,7 +245,7 @@ OST_CSEM  Uart2_Msg;
  ********************************************************************************/
 void Start_UART2 (void)
 {
-	unsigned long Uart2_Baud_Rate;	// stored rate for UART 1
+	static unsigned long Uart2_Baud_Rate;	// stored rate for UART 1
 
 	OS_Csem_Create(Uart2_Msg);
 
@@ -313,7 +309,7 @@ void Start_UART2 (void)
 //		}
 //	}
 
-	Uart2_Baud_Rate = 9600;
+	Uart2_Baud_Rate = A_BAUDE_RATE;
 
 	// TBD read eprom
 	U2BRG = Baud_Rate(Uart2_Baud_Rate);
@@ -357,15 +353,11 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 			// while there is any data in the buffer
 			// read it completely
 			while (U2STAbits.URXDA) {
-				unsigned char ch;
-
 				// read the character from FIFO
-				ch = U2RXREG;
-
-				Uart2.m_RXBuffer[Uart2.m_RXTail] = ch;
+				Uart2.m_RXBuffer[Uart2.m_RXTail] = U2RXREG;
 
 				// check if it is endl symbol, if yes then increment message semaphore counter
-				if (ch == 0x0d)
+				if (Uart2.m_RXBuffer[Uart2.m_RXTail] == 0x0d)
 				{
 					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart2_Msg);
@@ -391,7 +383,6 @@ void outputChar_UART2(char ch)
 {
 	while (U2STAbits.UTXBF) {
 		ClrWdt();
-		OS_Yield(); // Unconditional context switching
 	}
 	U2TXREG = ch;
 }
