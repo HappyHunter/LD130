@@ -12,6 +12,11 @@
 #include "Parser.h"
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+
+void sendVersionReply();
+
+
 
 //------------------------------------------------------------------------------
 void Task_UART1 (void)
@@ -67,17 +72,21 @@ void Task_UART1 (void)
 		RXBuffer[iPos] = 0;
 
 		// parse the incoming text
-		outputString_UART1(">");
-		outputString_UART1(RXBuffer);
-		outputString_UART1(">");
 		if (ParseSentence(RXBuffer)) {
+			if (strcmp(GetCmdName(), "getver") == 0) {
+				sendVersionReply();
+				continue;
+
+			}
+
 			outputString_UART1(GetCmdName());
 			outputString_UART1(":OK");
+			outputString_UART1("\r\n");
 		} else {
 			outputString_UART1(RXBuffer);
 			outputString_UART1(":ERR");
+			outputString_UART1("\r\n");
 		}
-		outputString_UART1("\r\n");
     }
 
 }
@@ -94,4 +103,16 @@ void Task_UART2 (void)
 
 }
 
+
+//------------------------------------------------------------------------------
+void sendVersionReply()
+{
+	outputString_UART1("version,");
+	outputIntAsString_UART1(VERSION_MAJOR);
+	outputChar_UART1(',');
+	outputIntAsString_UART1(VERSION_MINOR);
+	outputChar_UART1(',');
+	outputIntAsString_UART1(VERSION_BUILD);
+	outputString_UART1("\r\n");
+}
 

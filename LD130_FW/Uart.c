@@ -128,6 +128,9 @@ void Start_UART1 (void)
 	Uart1.m_UartID = 1;        	// the ID is 1
 	Uart1.m_baud_rate = Uart1_Baud_Rate;
 
+//	_TRISD6 = 0;
+
+
 }
 
 
@@ -148,6 +151,9 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 		// now start reading the data from UART
 		do {
+//			_LATD6 = !_LATD6;
+			_LATD4 = !_LATD4;
+
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {

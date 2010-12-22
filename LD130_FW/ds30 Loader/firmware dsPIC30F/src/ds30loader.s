@@ -124,6 +124,16 @@
 		   	.equ	URXREG,		U1RXREG					;uart receive
 			.equ	URXIF,		U1RXIF					;uart received interupt flag
 			.equ	UTXIF,		U1TXIF					;uart transmit interupt flag
+
+
+		   	.equ    UMODE2,	    U2MODE					;uart mode
+		   	.equ    USTA2, 		U2STA					;uart status
+		   	.equ    UBRG2,		U2BRG					;uart baudrate
+		   	.equ    UTXREG2,	U2TXREG					;uart transmit
+		   	.equ	URXREG2,	U2RXREG					;uart receive
+			.equ	URXIF2,		U2RXIF					;uart received interupt flag
+			.equ	UTXIF2,		U2TXIF					;uart transmit interupt flag
+
 		.endif
 		
 		.ifdef USE_UART2
@@ -144,6 +154,7 @@
 		   	.equ	URXREG,		U2RXREG					;uart receive
 			.equ	URXIF,		U2RXIF					;uart received interupt flag
 			.equ	UTXIF,		U2TXIF					;uart transmit interupt flag
+
 		.endif
 
 
@@ -308,6 +319,9 @@
 		.bss	iUnread, ( 2 )
 		.bss	rxBuffer, ( 128 )
 		.bss	buffer, ( ROWSIZEW * 3 + 1/*checksum*/ )
+ 		.bss	tmpData, ( 3 )
+ 		.bss	tmpData1, ( 2 )
+ 		.bss	tmpW0, ( 2 )
 		
 
 ;------------------------------------------------------------------------------
@@ -402,11 +416,20 @@ __reset:mov 	#__SP_init, WSTPTR	;initalize the Stack Pointer
 			.ifndef USE_ABAUD
 				mov		#UARTBR, W0 		
 		       	mov 	W0, UBRG			;set baudrate
+				;***********************
+		       	mov 	W0, UBRG2			;set baudrate UART2
+				;***********************
+
 				.ifdef 	USE_ALTIO
 					bset	U1MODE, #ALTIO
 				.endif
+
 				bset 	UMODE, #UARTEN		;enable UART
 				bset 	USTA, #UTXEN		;enable TX		
+				;***********************
+				bset 	UMODE2, #UARTEN		;enable UART 2
+				bset 	USTA2, #UTXEN		;enable TX	2
+				;***********************
 			
 			; UART witht auto baudrate detection
 			.else		
@@ -655,7 +678,16 @@ rcvdata:rcall 	Receive
 		dec		WCNT, WCNT
 		bra 	nz, rcvdata			;last byte received is checksum		
 			
-				
+;		mov.b	#'R', W8
+;		rcall 	Send2			
+;		mov.b	#'e', W8
+;		rcall 	Send2			
+;		mov.b	#'c', W8
+;		rcall 	Send2			
+;		mov.b	#' ', W8
+;		rcall 	Send2			
+
+			
 		;----------------------------------------------------------------------
 		; 0x00 goto protection
 		;----------------------------------------------------------------------	
@@ -775,18 +807,19 @@ latlo:	tblwth.b 	[WBUFPTR++], [WADDR] 	;upper byte
 		; Verify upper byte
 verloop:tblrdh.b [WADDR2], W0
 		cp.b	W0, [WBUFPTR++]
-;		bra		NZ, vfail		
+		bra		NZ, vfail		
 		; Verify low byte
 		tblrdl.b [WADDR2++], W0
 		cp.b	W0, [WBUFPTR++]
-;		bra		NZ, vfail
+		bra		NZ, vfail1
 		; Verify high byte
 		tblrdl.b [WADDR2++], W0
 		cp.b	W0, [WBUFPTR++]
-;		bra		NZ, vfail
+		bra		NZ, vfail2
 		; Loop
 		dec		WCNT, WCNT
 		bra 	nz, verloop
+
 		; Verify finished
 		bra		Main
 		
@@ -813,6 +846,36 @@ eeprom:	mov 	#0x4044, W0
 		; Verify fail
 		;----------------------------------------------------------------------
 vfail:	SendL	VERFAIL
+;		mov		W0,W7
+;		rcall	SendHex
+;		mov.b	#':', W8
+;		rcall 	Send2			
+;		mov.b	[WBUFPTR],W7
+;		rcall	SendHex
+;		mov.b	#',', W8
+;		rcall 	Send2			
+		bra		main1
+		
+vfail1:	SendL	VERFAIL
+;		mov		W0,W7
+;		rcall	SendHex
+;		mov.b	#':', W8
+;		rcall 	Send2			
+;		mov.b	[WBUFPTR],W7
+;		rcall	SendHex
+;		mov.b	#';', W8
+;		rcall 	Send2			
+		bra		main1
+		
+vfail2:	SendL	VERFAIL
+;		mov		W0,W7
+;		rcall	SendHex
+;		mov.b	#':', W8
+;		rcall 	Send2			
+;		mov.b	[WBUFPTR],W7
+;		rcall	SendHex
+;		mov.b	#':', W8
+;		rcall 	Send2			
 		bra		main1
 		
 						
@@ -902,7 +965,7 @@ Write:
 compl:	btsc	NVMCON, #WR		
 		bra 	compl			
 		return
-		
+	
 		
 ;------------------------------------------------------------------------------
 ; Send()
@@ -927,6 +990,155 @@ txwait:	btss	USTA, #TRMT
 		; Send complete
 		return
 .endif
+
+;;------------------------------------------------------------------------------
+;; Send2() parameter is in W8
+;;------------------------------------------------------------------------------
+;Send2:	; Enable tx
+;		;Send byte
+;		mov 	W8, UTXREG2
+;		nop
+;		nop
+;		nop
+;		; Wait until transmit shift register is empty
+;
+;;			bra txwait2A
+;;txwait2B:	clrwdt
+;;txwait2A: 	mov U2STA,W8
+;;			and.b W8,#UTXBF,W8
+;;			cp0.b W8
+;;			bra nz, txwait2B
+;;
+;
+;txwait2:	clrwdt
+;			btss	USTA2, #TRMT
+;			bra		txwait2
+;		; Send complete
+;		return
+;
+;
+;
+;;;------------------------------------------------------------------------------
+;;; SendHex() W7 is input
+;;;------------------------------------------------------------------------------
+;;SendHex:	; Enable tx
+;;        mov.b   #' ', W8
+;;        rcall   Send2
+;;
+;;        mov     #0xd5,W7
+;;
+;;        mov     W7, tmpData
+;;
+;;        ze      tmpData, 0x0000
+;;        asr     0x0000,#8,0x0000
+;;        mov.b   0x0000, tmpData
+;;
+;;        mov.b   #0x9,0x0000
+;;        subr.b  0x0000,tmpData,tmpData1
+;;        bra     leu, SendHex1
+;;
+;;        mov.b   tmpData,0x0000
+;;        add.b   #0x37,0x0000
+;;        mov.b   0x0000,W8
+;;        bra     SendHex2
+;;
+;;SendHex1:
+;;
+;;        mov.b   tmpData,0x0000
+;;        add.b   #0x30,0x0000
+;;        mov.b   0x0000,W8
+;;
+;;SendHex2:
+;;        rcall   Send2
+;;
+;;        mov.b   #':', W8
+;;        rcall   Send2
+;;        return
+;
+;;------------------------------------------------------------------------------
+;; SendHex() W7 is input
+;;------------------------------------------------------------------------------
+;SendHex:	; Enable tx
+;
+;;			mov		#0x00AD, W7
+;			mov 	#tmpW0, W12
+;			mov		W0,[W12]
+;			
+;
+;;			mov.b 	W7,W0
+;			mov 	#tmpData1, W12
+;
+;
+;			mov 	#tmpData, 	W8
+;			mov.b 	W7, [W8]
+;
+;;			W7 = W7 & 0xF0;
+;			mov.b 	#0xf0,W0
+;			and.b 	W0,[W8],[W8]
+;
+;;//		    W7 >>= 8;
+;			ze 		[W8],W0
+;			asr 	W0,#4,W0
+;			mov.b 	W0,[W8]
+;
+;;//         if (W7 > 9)
+;			mov.b 	#0x9,W0
+;			subr.b 	W0,[W8],[W12]
+;			bra 	leu, SendHex1
+;
+;;//         	i = i - 10 + 'A';
+;			mov.b 	[W8],W0
+;			add.b 	#0x37,W0
+;;			mov.b 	W0,[W8]
+;			mov.b 	W0,W8
+;			bra 	SendHex2
+;
+;;//         else
+;;//         	i = i + '0';
+;SendHex1:	mov.b 	[W8],W0
+;			add.b 	#0x30,W0
+;;			mov.b 	W0,[W8]
+;			mov.b 	W0,W8
+;	   
+;SendHex2:	
+;;			mov 	[W8],W0
+;;			mov    	W0,W8
+;			rcall 	Send2
+;
+;;			mov.b 	W7,W0
+;			mov 	#tmpData, W8
+;			mov.b 	W7,[W8]
+;;           i = i & 0x0F;
+;			mov.b [W8],W0
+;			and.b W0,#15,[W8]
+;
+;;			if (i > 9)
+;			mov.b #0x9,W0
+;			subr.b W0,[W8],[W12]
+;			bra leu, SendHex3
+;;           i = i - 10 + 'A';
+;
+;			mov.b [W8],W0
+;			add.b #0x37,W0
+;			mov.b W0,[W8]
+;			bra SendHex4
+;
+;;           else
+;;           	i = i + '0';
+;SendHex3: 	mov.b [W8],W0
+;			add.b #0x30,W0
+;			mov.b W0,[W8]
+;
+;SendHex4: 	
+;			ze 		[W8],W0
+;			mov    	W0,W8
+;			rcall 	Send2
+;
+;			mov 	#tmpW0, W12
+;			mov		[W12], W0
+;
+;;			ulnk
+;			return
 
 
 ;------------------------------------------------------------------------------
@@ -1032,7 +1244,7 @@ movbyte:mov.b	[W0++], [W1++]
 		bclr	CiINTF, #RX0IF
 		bclr	CiRX0CON, #RXFUL
 		return
-				
+	
 				
 ;------------------------------------------------------------------------------
 ; Receive, wait for data from CAN bus

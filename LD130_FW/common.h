@@ -16,8 +16,16 @@
 //
 // DO NOT FORGET TO CHANGE IT ACCORDING TO YOUR CRYSTAL CLOCK
 //-----------------------------------------------------------------------------------------
-// 7.37Mhz crystal in 16X PLL mode
-#define A_FOSC_ 29491250UL
+
+//#define USE_30_MHZ
+
+#ifdef USE_30_MHZ
+	// 7.37Mhz crystal in 16X PLL mode
+	#define A_FOSC_ 29491250UL
+#else
+	// 7.37Mhz crystal in 8X PLL mode
+	#define A_FOSC_ 14741250UL
+#endif
 
 #define A_BAUDE_RATE 9600
 
@@ -46,8 +54,10 @@ typedef struct tag_UARTBuff
 
 #if 1
 #define DbgOut(X) outputString_UART2(X)
+#define DbgOutInt(X) outputIntAsString_UART2(X)
 #else
 #define DbgOut(X)
+#define DbgOutInt(X)
 #endif
 
 #endif

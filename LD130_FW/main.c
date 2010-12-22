@@ -13,7 +13,12 @@
 
 
 // uses watchdog timer
+#ifdef USE_30_MHZ
 _FOSC(XT_PLL16 & CSW_FSCM_OFF);
+#else
+_FOSC(XT_PLL8 & CSW_FSCM_OFF);
+#endif
+
 _FWDT(WDT_OFF & WDTPSA_64 & WDTPSB_16);
 _FBORPOR(PBOR_OFF & MCLR_EN);	//	;xxx power-on reset, brown-out reset, master clear
 //_FGS(CODE_PROT_OFF)			//	;xxx code protection
@@ -198,7 +203,7 @@ void TaskBlink()
 		if (++iPeriod == 0) {
 			_LATD5 = !_LATD5;
 			if (++iPeriod2 > 20) {
-				_LATD4 = !_LATD4;
+//				_LATD4 = !_LATD4;
 				iPeriod2 = 0;
 //				outputString_UART1("Hello\r\n");
 			}
@@ -207,3 +212,76 @@ void TaskBlink()
 
 }
 
+
+//;void outputIntAsHexString1(int aPort, unsigned long aValue)
+//;{
+//;//	const char* pCh = 0;
+//;//	char buf[11];
+//;	unsigned char i;
+//;//	buf[10] = 0;
+//;
+//;	while (U2STAbits.UTXBF) {
+//;		ClrWdt();
+//;	}
+//;	U2TXREG = ' ';
+//;
+//;	i = 0xd5;
+//;
+//;
+//;	i = i & 0xF0;
+//;	i >>= 8;
+//;	if (i > 9)
+//;		i = i - 10 + 'A';
+//;	else
+//;		i = i + '0';
+//;
+//;	while (U2STAbits.UTXBF) {
+//;		ClrWdt();
+//;	}
+//;	U2TXREG = i;
+//;
+//;	i = 0xd5;
+//;	i = i & 0x0F;
+//;	if (i > 9)
+//;		i = i - 10 + 'A';
+//;	else
+//;		i = i + '0';
+//;
+//;	while (U2STAbits.UTXBF) {
+//;		ClrWdt();
+//;	}
+//;	U2TXREG = i;
+//;
+//;
+//;	while (U2STAbits.UTXBF) {
+//;		ClrWdt();
+//;	}
+//;	U2TXREG = ':';
+//;
+//;/*
+//;	for (i = 10; i != 0; --i) {
+//;		buf[i-1] = (aValue % 16) + '0';
+//;		if (buf[i-1] > '9') buf[i-1] = buf[i-1] - '9' + 'A' - 1;
+//;		aValue = aValue / 16;
+//;	}
+//;
+//;	// strip the leading zeros
+//;	for (pCh = buf; pCh && *pCh == '0'; ++pCh)
+//;		;
+//;
+//;	// in case if all are zeros, then still output 0
+//;	if (*pCh == 0){
+//;//		buf[0] = '0';	assume that there is '0' already there
+//;		buf[1] = 0;
+//;		pCh = buf;
+//;	}
+//;
+//;	for (; pCh && *pCh; ++pCh) {
+//;		while (U1STAbits.UTXBF) {
+//;			ClrWdt();
+//;		}
+//;		U1TXREG = *pCh;
+//;	}
+//;*/
+//;}
+//;

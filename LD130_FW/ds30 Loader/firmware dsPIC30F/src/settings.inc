@@ -57,8 +57,12 @@
 ;------------------------------------------------------------------------------
 		;.equ	DEV_MODE,	1					;xxx comment or delete this line
 		
-								
-		.equ 	FCY, 		30000000			;xxx speed of internal cycle clock[Hz], used to calculate uart brg and delay
+		.equ 	FCY, 		15000000			;xxx speed of internal cycle clock[Hz], used to calculate uart brg and delay
+		config 	__FOSC, 	CSW_FSCM_OFF & XT_PLL8	;xxx oscillator
+
+;		.equ 	FCY, 		30000000			;xxx speed of internal cycle clock[Hz], used to calculate uart brg and delay
+;		config 	__FOSC, 	CSW_FSCM_OFF & XT_PLL16	;xxx oscillator
+
 		.equ 	BAUDRATE, 	9600				;xxx baudrate
 		.equ	BLTIME,		3000				;xxx time in ms before bootloader loads the user application
        	
@@ -122,7 +126,6 @@
 ;
 ; These can also be set in MPLAB IDE instead, they are found in Configure->Configuration bits...
 ;------------------------------------------------------------------------------
-		config 	__FOSC, 	CSW_FSCM_OFF & XT_PLL16	;xxx oscillator
 		config 	__FWDT, 	WDT_OFF						;xxx watchdog
 ;		config 	__FBORPOR,	PBOR_OFF & MCLR_EN			;xxx power-on reset, brown-out reset, master clear
 ;		config 	__FGS, 		CODE_PROT_OFF 				;xxx code protection
