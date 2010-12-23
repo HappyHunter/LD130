@@ -8,7 +8,7 @@
 #include "osa.h"
 #include "Common.h"
 #include "Uart.h"
-#include "Parser.h"
+//#include "Parser.h"
 #include "CmdManager.h"
 
 
@@ -39,9 +39,9 @@ int main (void)
 
 
     //------------------------------------------------------------------------------
-    //  Init the components
+    //  Init software components
     //------------------------------------------------------------------------------
-	InitializeParser();
+	InitCmdManager();
 
     //------------------------------------------------------------------------------
     //  Init RTOS

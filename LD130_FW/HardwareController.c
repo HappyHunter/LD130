@@ -12,6 +12,45 @@
 #include "SPI.h"
 #include "Uart.h"
 
+//-----------------------------------------------------------------------------------------
+// Currently we can have up to 4 banks of parameters.
+//
+// Each bank has all the settings for both output heads 1 and 2.
+//
+// We can choose which bank is active by sending a select bank message or
+// by selecting the bank sequence.
+//
+// If we choose the bank sequence then the hardware wil be reprogrammed after
+// each trigger
+//-----------------------------------------------------------------------------------------
+TBankInfo 		theBankInfo[4];
+
+/*
+* The status of the output heads after programming
+*/
+TBankHeadStatus theHeadStatus[2];
+
+//unsigned char ActiveBank = 0;
+//-----------------------------------------------------------------------------------------
+// The bank sequence is a circular buffer which we follow when we trigger.
+// Once the sequence is set we will program the hardware with the parameters for the bank
+// in index 0. Then after the trigger we will increment the position and reprogram the hardware
+// from the bank referred by index 1, etc.
+//
+// After we reach the end of the sequence, we will roll over and start from the begining
+//
+// The sequence can be reset by a message or by an IO *****TBD*****
+//-----------------------------------------------------------------------------------------
+unsigned char BankSequence[512];	// the sequence of IDs of the banks
+unsigned short BankSequencePos = 0;	// the current position in the sequence
+unsigned short BankSequenceEnd = 0;	// the position AFTER the last valid element, can be used as a sequence length
+unsigned short BankLastUsedId  = 0;	// the last used bank ID, we will check if ID is the same no need to reprogram the hardware
+
+
+// The flags from the flash that control some hardware stuff
+unsigned long TheFlashFlags;
+
+
 /*
 Trigger pins:
 	Trigger 1:	RD5/67/CN14 Input  _LATD2/OC3/62 - output
@@ -29,7 +68,7 @@ In more complicated cases timer 2 is assigned to the output 1
 and timer 3 is assigned to output 2. So if both outputs are set to be triggered by trig 1
 the interrupt will first start timer 2 and then timer 3. So there will be slight delay.
 */
-extern unsigned long TheFlashFlags;
+//extern unsigned long TheFlashFlags;
 
 
 unsigned char Trig1_IN_Enabled;		// The flag that enables trig IN signal
@@ -88,7 +127,54 @@ void delay_us(unsigned long aTimeInMicrosec)
 	}
 }
 
-void programOutputHead(TBankHeadData* pHeadData);
+void programOutputHead(TBankInfo* pInfo, unsigned char anOutput);
+
+//-----------------------------------------------------------------------------------------
+// Initializes the Output Head data (constructor)
+//
+// Sets all members to 0, and sets the head ID to the id provided
+//-----------------------------------------------------------------------------------------
+void initOutputHeadData(TBankHeadData* pData, unsigned char anId, unsigned char aBankId)
+{
+	// store the ID
+	pData->m_outputId = anId;   	// 1 - head 1, 2 - Head 2
+    pData->m_bankId = aBankId;		// 1, 2, 3, 4
+
+    pData->m_voltage = 0;			// 0 - 100 Volts
+    pData->m_powerChanel1 = 0; 		// 0 - 100 00% with fixed decimal point at 2 digits
+    pData->m_powerChanel2 = 0; 		// for example the power of 35.23% will be sent as 3523
+    pData->m_powerChanel3 = 0; 		// the power of 99.00% will be sent as 9900
+    pData->m_powerChanel4 = 0; 		// the power of 100.00% will be sent as 10000
+    pData->m_strobeDelay = 10;		// the delay of outcoming light strobe in microseconds
+    pData->m_strobeWidth = 10;		// the duration of outcoming light strobe in microseconds
+    pData->m_triggerEdge = 0;		// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+    pData->m_triggerId = (anId == 1? TriggerID1 : TriggerID2); // the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+    pData->m_chanelAmplifier = 1;	 // the amplification value 1-5
+}
+
+
+//-----------------------------------------------------------------------------------------
+// Initializes all 4 bank info structures.
+//-----------------------------------------------------------------------------------------
+void InitAllBankInfo()
+{
+	unsigned short i;
+	for (i = 1; i <= 4; ++i) {
+		theBankInfo[i - 1].m_id = i;
+		initOutputHeadData(&(theBankInfo[i - 1].m_output[0]), 1, i);
+		initOutputHeadData(&(theBankInfo[i - 1].m_output[1]), 2, i);
+
+		theBankInfo[i - 1].m_strobeTimerPrescaler[0] = 0xffff; //To be computed later from strobeDelay and strobeWidth
+		theBankInfo[i - 1].m_strobeTimerPrescaler[1] = 0xffff; //To be computed later from strobeDelay and strobeWidth
+	}
+
+	for (i = 0; i < 2; ++i) {
+		theHeadStatus[i].m_chanelStatusFlags[0] = 0;
+		theHeadStatus[i].m_chanelStatusFlags[1] = 0;
+		theHeadStatus[i].m_chanelStatusFlags[2] = 0;
+		theHeadStatus[i].m_chanelStatusFlags[3] = 0;
+	}
+}
 
 //-----------------------------------------------------------------------------------------
 // initalizes the PIN for trigger 1
@@ -172,7 +258,7 @@ void initTrigger2()
 
 //-----------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------
-void programBank(const TBankInfo* pBankInfo)
+void programBank(TBankInfo* pBankInfo)
 {
 	unsigned char old_Trig1_IN_Enabled;
 	unsigned char old_Trig2_IN_Enabled;
@@ -221,22 +307,22 @@ void programBank(const TBankInfo* pBankInfo)
 //		outputIntAsString(&Uart1, pBankInfo->m_id);
 //		outputString(&Uart1, "\r\n");
 //
-//		outputString(&Uart1, "pBankInfo->m_chanelPower[0] = ");
-//		outputIntAsString(&Uart1, pBankInfo->m_output[0].m_chanelPower[0]);
+//		outputString(&Uart1, "pBankInfo->m_powerChanel1 = ");
+//		outputIntAsString(&Uart1, pBankInfo->m_output[0].m_powerChanel1);
 //		outputString(&Uart1, "\r\n");
 //
-//		outputString(&Uart1, "pBankInfo->m_chanelPower[1] = ");
-//		outputIntAsString(&Uart1, pBankInfo->m_output[0].m_chanelPower[1]);
+//		outputString(&Uart1, "pBankInfo->m_powerChanel2 = ");
+//		outputIntAsString(&Uart1, pBankInfo->m_output[0].m_powerChanel2);
 //		outputString(&Uart1, "\r\n");
 
 
 //	outputString(&Uart1, "programOutputHead=0\r\n");
-	programOutputHead(&(pBankInfo->m_output[0]));
+	programOutputHead(pBankInfo, 0);
 //	outputString(&Uart1, "programOutputHead=1\r\n");
-	programOutputHead(&(pBankInfo->m_output[1]));
+	programOutputHead(pBankInfo, 1);
 
 	if (1/*pBankInfo->m_output[0].m_triggerEdge == pBankInfo->m_output[1].m_triggerEdge &&
-		pBankInfo->m_output[0].m_triggerID == pBankInfo->m_output[1].m_triggerID &&
+		pBankInfo->m_output[0].m_triggerId == pBankInfo->m_output[1].m_triggerId &&
 		pBankInfo->m_output[0].m_strobeTimerPrescaler == pBankInfo->m_output[1].m_strobeTimerPrescaler*/
 	) {
 		T2CONbits.TON = 0;		// disable timer 2
@@ -248,7 +334,7 @@ void programBank(const TBankInfo* pBankInfo)
 		OC3CONbits.OCTSEL = 0;	// use timer 2 as a source for trigger 1 output
 		OC4CONbits.OCTSEL = 0;	// use timer 2 as a source for trigger 2 output
 
-		T2IE = 0;				// disable timer 2 interrupt
+		_T2IE = 0;				// disable timer 2 interrupt
 	//	T3IE = 0;				// disable timer 3 interrupt
 
 		//timer 3 is not used
@@ -260,11 +346,11 @@ void programBank(const TBankInfo* pBankInfo)
 		// in that interrupt we will reenable OC module
 		PR2 = OC3RS > OC4RS ? OC3RS+4 : OC4RS+4;
 
-		T2IF = 0;				// reset interrupt flag for timer 2
-		T2IE = 1;				// enable timer 2 interrupt
+		_T2IF = 0;				// reset interrupt flag for timer 2
+		_T2IE = 1;				// enable timer 2 interrupt
 
 		// Check whether we have to use trigger input 1
-		if ((pBankInfo->m_output[0].m_triggerID & TriggerID1) != 0) {
+		if ((pBankInfo->m_output[0].m_triggerId & TriggerID1) != 0) {
 			Trig1_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 			Trig1_Timer2_Enabled = 1;
 		}
@@ -273,7 +359,7 @@ void programBank(const TBankInfo* pBankInfo)
 		}
 
 		// Check whether we have to use trigger input 2
-		if ((pBankInfo->m_output[0].m_triggerID & TriggerID2) != 0) {
+		if ((pBankInfo->m_output[0].m_triggerId & TriggerID2) != 0) {
 			Trig2_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 			Trig2_Timer2_Enabled = 1;
 		}
@@ -288,31 +374,31 @@ void programBank(const TBankInfo* pBankInfo)
 		// 2 outputs cannot use the same timer
 
 		// output head 1 is attached to timer 2
-		Trig1_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerID & TriggerID1) && pBankInfo->m_output[0].m_strobeWidth != 0;
+		Trig1_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerId & TriggerID1) && pBankInfo->m_output[0].m_strobeWidth != 0;
 		Trig1_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 
 		// output head 2 attached to timer 3
-		Trig1_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerID & TriggerID1) && pBankInfo->m_output[1].m_strobeWidth != 0;
+		Trig1_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerId & TriggerID1) && pBankInfo->m_output[1].m_strobeWidth != 0;
 		Trig1_Timer3_Edge    = pBankInfo->m_output[1].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 
 
 		// here we set which timers should be started on trigger 2
-		Trig2_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerID & TriggerID2) && pBankInfo->m_output[0].m_strobeWidth != 0;
+		Trig2_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerId & TriggerID2) && pBankInfo->m_output[0].m_strobeWidth != 0;
 		Trig2_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 
 		// output head 2 attached to timer 3
-		Trig2_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerID & TriggerID2) && pBankInfo->m_output[1].m_strobeWidth != 0;
+		Trig2_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerId & TriggerID2) && pBankInfo->m_output[1].m_strobeWidth != 0;
 		Trig2_Timer3_Edge    = pBankInfo->m_output[1].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 
 	}
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
 
-	outputString(&UartDbg, "programBank=done\r\n");
+	DbgOut("programBank=done\r\n");
 }
 
 //-----------------------------------------------------------------------------------------
-void setPulseInfoOutput1(TOutputHeadData* pHead)
+void setPulseInfoOutput1(TBankInfo* pInfo, unsigned char anOutput)
 {
 	unsigned long interruptDelay;
 
@@ -344,36 +430,36 @@ void setPulseInfoOutput1(TOutputHeadData* pHead)
 	OC3CONbits.OCTSEL = 0;	// use timer 2 as a source
 
 
-	if (pHead->m_strobeTimerPrescaler == 0xffff) {
-		if (getTimeInTicks(pHead->m_strobeDealy) + getTimeInTicks(pHead->m_strobeWidth) < 0xFFF0)
-			pHead->m_strobeTimerPrescaler = 0;
-		else if (getTimeInTicksPre(pHead->m_strobeDealy, 8) + getTimeInTicksPre(pHead->m_strobeWidth, 8) < 0xFFF0)
-			pHead->m_strobeTimerPrescaler = 8;
-		else if (getTimeInTicksPre(pHead->m_strobeDealy, 64) + getTimeInTicksPre(pHead->m_strobeWidth, 64) < 0xFFF0)
-			pHead->m_strobeTimerPrescaler = 64;
+	if (pInfo->m_strobeTimerPrescaler[anOutput] == 0xffff) {
+		if (getTimeInTicks(pInfo->m_output[anOutput].m_strobeDelay) + getTimeInTicks(pInfo->m_output[anOutput].m_strobeWidth) < 0xFFF0)
+			pInfo->m_strobeTimerPrescaler[anOutput] = 0;
+		else if (getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeDelay, 8) + getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeWidth, 8) < 0xFFF0)
+			pInfo->m_strobeTimerPrescaler[anOutput] = 8;
+		else if (getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeDelay, 64) + getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeWidth, 64) < 0xFFF0)
+			pInfo->m_strobeTimerPrescaler[anOutput] = 64;
 		else
-			pHead->m_strobeTimerPrescaler = 256;
+			pInfo->m_strobeTimerPrescaler[anOutput] = 256;
 	}
 
 	// the fixed delay between we detect the trigger and ISR enables the timer
 	// for  7.37Mhz crystal in 16X PLL mode
 	// right now for trigger 1 it is 3us
-	if (pHead->m_strobeTimerPrescaler == 0)
+	if (pInfo->m_strobeTimerPrescaler[anOutput] == 0)
 		interruptDelay = getTimeInTicks(3);
 	else
 		interruptDelay = 0;
 
-	outputString(&UartDbg, " setPulseInfoOutput1 width=");
-	outputIntAsString(&UartDbg, pHead->m_strobeWidth);
-	outputString(&UartDbg, " delay=");
-	outputIntAsString(&UartDbg, pHead->m_strobeDealy);
-	outputString(&UartDbg, " scale=");
-	outputIntAsString(&UartDbg, pHead->m_strobeTimerPrescaler);
-	outputString(&UartDbg, " ISR delay=");
-	outputIntAsString(&UartDbg, interruptDelay);
+	DbgOut(" setPulseInfoOutput1 width=");
+	DbgOutInt(pInfo->m_output[anOutput].m_strobeWidth);
+	DbgOut(" delay=");
+	DbgOutInt(pInfo->m_output[anOutput].m_strobeDelay);
+	DbgOut(" scale=");
+	DbgOutInt(pInfo->m_strobeTimerPrescaler[anOutput]);
+	DbgOut(" ISR delay=");
+	DbgOutInt(interruptDelay);
 
 
-	switch (pHead->m_strobeTimerPrescaler) {
+	switch (pInfo->m_strobeTimerPrescaler[anOutput]) {
 		case 0:
 			T2CONbits.TCKPS=0x0;		// use prescaler *1:1* 1:8 1:64 1:256
 			break;
@@ -397,7 +483,7 @@ void setPulseInfoOutput1(TOutputHeadData* pHead)
 	_T2IE = 1;				// enable timer 2 interrupt
 
 	// pulse time start
-	OC3R =  getTimeInTicksPre(pHead->m_strobeDealy, pHead->m_strobeTimerPrescaler);
+	OC3R =  getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeDelay, pInfo->m_strobeTimerPrescaler[anOutput]);
 
 	// check if the delay is more than ISR delay, then adjust it for the ISR delay
 	if (OC3R >= interruptDelay)
@@ -408,17 +494,17 @@ void setPulseInfoOutput1(TOutputHeadData* pHead)
 	if (OC3R == 0)			// the minimum delay is 1 timer tick
 		OC3R = 1;
 
-	outputString(&UartDbg, " OC3R=");
-	outputIntAsString(&UartDbg, OC3R);
+	DbgOut(" OC3R=");
+	DbgOutInt(OC3R);
 
-	OC3RS= OC3R + getTimeInTicksPre(pHead->m_strobeWidth, pHead->m_strobeTimerPrescaler);		// pulse time stop
+	OC3RS= OC3R + getTimeInTicksPre(pInfo->m_output[anOutput].m_strobeWidth, pInfo->m_strobeTimerPrescaler[anOutput]);		// pulse time stop
 
 	if (OC3RS < 2)			// the minimum width is 1 timer tick after the delay
 		OC3RS = 2;
 
-	outputString(&UartDbg, " OC3RS=");
-	outputIntAsString(&UartDbg, OC3RS);
-	outputString(&UartDbg, "\r\n");
+	DbgOut(" OC3RS=");
+	DbgOutInt(OC3RS);
+	DbgOut("\r\n");
 
 	PR2 = OC3RS+4;			// this will also trigger an interrupt for timer 2
 							// TODO: check! in this interrupt we will reenable this OC module
@@ -428,9 +514,9 @@ void setPulseInfoOutput1(TOutputHeadData* pHead)
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
 }
 //-----------------------------------------------------------------------------------------
-void setPulseInfoOutput2(TOutputHeadData* pHead)
+void setPulseInfoOutput2(TBankInfo* pInfo, unsigned char anOutput)
 {
-	unsigned long interruptDelay;
+//	unsigned long interruptDelay;
 
 	unsigned char old_Trig1_IN_Enabled;
 	unsigned char old_Trig2_IN_Enabled;
@@ -453,11 +539,11 @@ void setPulseInfoOutput2(TOutputHeadData* pHead)
 		interruptDelay = 0;
 
 	if (pHead->m_strobeTimerPrescaler == 0xffff) {
-		if (getTimeInTicks(pHead->m_strobeDealy) + getTimeInTicks(pHead->m_strobeWidth) < 0xFFF0)
+		if (getTimeInTicks(pHead->m_strobeDelay) + getTimeInTicks(pHead->m_strobeWidth) < 0xFFF0)
 			pHead->m_strobeTimerPrescaler = 0;
-		else if (getTimeInTicksPre(pHead->m_strobeDealy, 8) + getTimeInTicksPre(pHead->m_strobeWidth, 8) < 0xFFF0)
+		else if (getTimeInTicksPre(pHead->m_strobeDelay, 8) + getTimeInTicksPre(pHead->m_strobeWidth, 8) < 0xFFF0)
 			pHead->m_strobeTimerPrescaler = 8;
-		else if (getTimeInTicksPre(pHead->m_strobeDealy, 64) + getTimeInTicksPre(pHead->m_strobeWidth, 64) < 0xFFF0)
+		else if (getTimeInTicksPre(pHead->m_strobeDelay, 64) + getTimeInTicksPre(pHead->m_strobeWidth, 64) < 0xFFF0)
 			pHead->m_strobeTimerPrescaler = 64;
 		else
 			pHead->m_strobeTimerPrescaler = 256;
@@ -490,7 +576,7 @@ void setPulseInfoOutput2(TOutputHeadData* pHead)
 //	_LATD3 = 0;				// set trigger OUT pin to 0,
 
 
-	OC4R = getTimeInTicksPre(pHead->m_strobeDealy, pHead->m_strobeTimerPrescaler) ;			// pulse time start
+	OC4R = getTimeInTicksPre(pHead->m_strobeDelay, pHead->m_strobeTimerPrescaler) ;			// pulse time start
 
 	// check if the delay is more than 1.5 us, then adjust it for the ISR delay
 	if (OC4R > interruptDelay)
@@ -729,74 +815,74 @@ short setVoltageDACValue(unsigned char aHead, unsigned long aValue)
 //-----------------------------------------------------------------------------------------
 // Programs the output head hardware with the parameters specified
 //-----------------------------------------------------------------------------------------
-void programOutputHead(TOutputHeadData* pHeadData)
+void programOutputHead(TBankInfo* pInfo, unsigned char anOutput)
 {
 	unsigned char old_Trig1_IN_Enabled;
 	unsigned char old_Trig2_IN_Enabled;
 	unsigned char noChannelPower;
 
-	unsigned long value = 0;
+//	unsigned long value = 0;
 
-	outputString(&UartDbg, "Programming output head...\r\n");
+	DbgOut("Programming output head...\r\n");
 	//temporarily disable input triggers
 	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
 	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
 	Trig1_IN_Enabled = 0;
 	Trig2_IN_Enabled = 0;
 
-	outputString(&UartDbg, "Init pulse module\r\n");
+	DbgOut("Init pulse module\r\n");
 
-	if (pHeadData->m_id == 0)
-		setPulseInfoOutput1(pHeadData);
+	if (anOutput == 0)
+		setPulseInfoOutput1(pInfo, anOutput);
 	else
-		setPulseInfoOutput2(pHeadData);
+		setPulseInfoOutput2(pInfo, anOutput);
 
-	outputString(&UartDbg, "Init head power\r\n");
+	DbgOut("Init head power\r\n");
 
-//	outputString(&Uart1, "m_chanelPower[0] = ");
-//	outputIntAsString(&Uart1, pHeadData->m_chanelPower[0]);
+//	outputString(&Uart1, "m_powerChanel1 = ");
+//	outputIntAsString(&Uart1, pInfo->m_powerChanel1);
 //	outputString(&Uart1, "\r\n");
 //
 //
-//	outputString(&Uart1, "m_chanelPower[1] = ");
-//	outputIntAsString(&Uart1, pHeadData->m_chanelPower[1]);
+//	outputString(&Uart1, "m_powerChanel2 = ");
+//	outputIntAsString(&Uart1, pInfo->m_powerChanel2);
 //	outputString(&Uart1, "\r\n");
 
-	noChannelPower = 	pHeadData->m_chanelPower[0] == 0 &&
-						pHeadData->m_chanelPower[1] == 0 &&
-						pHeadData->m_chanelPower[2] == 0 &&
-						pHeadData->m_chanelPower[3] == 0;
+	noChannelPower = 	pInfo->m_output[anOutput].m_powerChanel1 == 0 &&
+						pInfo->m_output[anOutput].m_powerChanel2 == 0 &&
+						pInfo->m_output[anOutput].m_powerChanel3 == 0 &&
+						pInfo->m_output[anOutput].m_powerChanel4 == 0;
 
-	setCurrentDACValue(pHeadData->m_id, 0, pHeadData->m_chanelPower[0], pHeadData->m_chanelAmplifier);
-	setCurrentDACValue(pHeadData->m_id, 1, pHeadData->m_chanelPower[1], pHeadData->m_chanelAmplifier);
-	setCurrentDACValue(pHeadData->m_id, 2, pHeadData->m_chanelPower[2], pHeadData->m_chanelAmplifier);
-	setCurrentDACValue(pHeadData->m_id, 3, pHeadData->m_chanelPower[3], pHeadData->m_chanelAmplifier);
-	setVoltageDACValue(pHeadData->m_id, noChannelPower ? 0 : pHeadData->m_voltage);
+	setCurrentDACValue(anOutput, 0, pInfo->m_output[anOutput].m_powerChanel1, pInfo->m_output[anOutput].m_chanelAmplifier);
+	setCurrentDACValue(anOutput, 1, pInfo->m_output[anOutput].m_powerChanel2, pInfo->m_output[anOutput].m_chanelAmplifier);
+	setCurrentDACValue(anOutput, 2, pInfo->m_output[anOutput].m_powerChanel3, pInfo->m_output[anOutput].m_chanelAmplifier);
+	setCurrentDACValue(anOutput, 3, pInfo->m_output[anOutput].m_powerChanel4, pInfo->m_output[anOutput].m_chanelAmplifier);
+	setVoltageDACValue(anOutput, noChannelPower ? 0 : pInfo->m_output[anOutput].m_voltage);
 
 
-	if (pHeadData->m_chanelPower[0] > 5000)
-		pHeadData->m_chanelStatusFlags[0] = 1;
+	if (pInfo->m_output[anOutput].m_powerChanel1 > 5000)
+		theHeadStatus[anOutput].m_chanelStatusFlags[0] = 1;
 	else
-		pHeadData->m_chanelStatusFlags[0] = 0;
+		theHeadStatus[anOutput].m_chanelStatusFlags[0] = 0;
 
-	if (pHeadData->m_chanelPower[1] > 5000)
-		pHeadData->m_chanelStatusFlags[1] = 1;
+	if (pInfo->m_output[anOutput].m_powerChanel2 > 5000)
+		theHeadStatus[anOutput].m_chanelStatusFlags[1] = 1;
 	else
-		pHeadData->m_chanelStatusFlags[1] = 0;
+		theHeadStatus[anOutput].m_chanelStatusFlags[1] = 0;
 
-	if (pHeadData->m_chanelPower[2] > 5000)
-		pHeadData->m_chanelStatusFlags[2] = 1;
+	if (pInfo->m_output[anOutput].m_powerChanel3 > 5000)
+		theHeadStatus[anOutput].m_chanelStatusFlags[2] = 1;
 	else
-		pHeadData->m_chanelStatusFlags[2] = 0;
+		theHeadStatus[anOutput].m_chanelStatusFlags[2] = 0;
 
-	if (pHeadData->m_chanelPower[3] > 5000)
-		pHeadData->m_chanelStatusFlags[3] = 1;
+	if (pInfo->m_output[anOutput].m_powerChanel4 > 5000)
+		theHeadStatus[anOutput].m_chanelStatusFlags[3] = 1;
 	else
-		pHeadData->m_chanelStatusFlags[3] = 0;
+		theHeadStatus[anOutput].m_chanelStatusFlags[3] = 0;
 
-	//outputString(&UartDbg, "Enable pulse module\r\n");
+	//DbgOut("Enable pulse module\r\n");
 
-	if (pHeadData->m_id == 0)
+	if (anOutput == 0)
 		OC3CONbits.OCM = 0x4;	// enable single pulse mode
 	else
 		OC4CONbits.OCM = 0x4;	// enable single pulse mode
@@ -805,22 +891,22 @@ void programOutputHead(TOutputHeadData* pHeadData)
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
 
-	outputString(&UartDbg, "Program output head done\r\n");
+	DbgOut("Program output head done\r\n");
 }
 
 //-----------------------------------------------------------------------------------------
-// Here is our lovely interrupt function that processes trigger input change - the name is unimportant.
+// Here is our lovely interrupt function that processes trigger input change
 //-----------------------------------------------------------------------------------------
-static void interrupt isr_InputChanged(void) @INCH_VCTR
+void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
 {
 	unsigned char rd5  = _RD5;
 	unsigned char rd6  = _RD6;
-	unsigned char rb15 = _RB15;
+//	unsigned char rb15 = _RB15;
 
 
 	// trig 1 is fired
 	if (Trig1_IN != rd5 && Trig1_IN_Enabled) {
-//		outputString(&UartDbg, " rd5 = ");
+//		DbgOut(" rd5 = ");
 //		outputIntAsString(&UartDbg, rd5);
 
 		if (Trig1_Timer2_Enabled && rd5 == Trig1_Timer2_Edge && T2CONbits.TON == 0) {
@@ -842,7 +928,7 @@ static void interrupt isr_InputChanged(void) @INCH_VCTR
 		if (Trig1_Timer3_Enabled && rd5 == Trig1_Timer3_Edge && T3CONbits.TON == 0) {
     		T3CONbits.TON = 1;	// turn ON timer
 //			outputString(&Uart1, "T3CONbits.TON = 1 = 1\r\n");
-			outputString(&UartDbg, "B=1\r\n");
+			DbgOut("B=1\r\n");
 		}
 
 
@@ -887,15 +973,15 @@ static void interrupt isr_InputChanged(void) @INCH_VCTR
 	//!!!	//used for voltage head control RB11	= !Trig1_IN_Loopback;	// inverted state
 	//!!!}
 
-	CNIF = 0;	// important to clear this bit
+	_CNIF = 0;	// important to clear this bit
 
 	//outputString(&UartDbg, "Z\r\n");
 }
 
 //-----------------------------------------------------------------------------------------
-// Here is our lovely interrupt function that Time 2 period change - the name is unimportant.
+// Here is our lovely interrupt function that Time 2 period change
 //-----------------------------------------------------------------------------------------
-static void interrupt isr_Timer2(void) @T2_VCTR
+void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 {
 	T2CONbits.TON = 0;		// disable the timer 2
 
@@ -916,12 +1002,13 @@ static void interrupt isr_Timer2(void) @T2_VCTR
 
 //	outputString(&UartDbg, "A=0\n");
 
-	T2IF = 0;	// important to clear this bit
+	_T2IF = 0;	// important to clear this bit
 }
 
 //-----------------------------------------------------------------------------------------
-// Here is our lovely interrupt function that Time 2 period change - the name is unimportant.
-static void interrupt isr_Timer3(void) @T3_VCTR
+// Here is our lovely interrupt function that Time 3 period change
+//-----------------------------------------------------------------------------------------
+void _ISR __attribute__ ((auto_psv)) _T3Interrupt (void)
 {
 	T3CONbits.TON = 0;		// disable the timer 3
 	OC4CONbits.OCM = 0;	// enable single pulse mode????
@@ -929,9 +1016,9 @@ static void interrupt isr_Timer3(void) @T3_VCTR
 	OC4CONbits.OCM = 0x4;	// enable single pulse mode???
 
 	_LATD3 = 0;//???
-	outputString(&UartDbg, "B=0\r\n");
+	DbgOut("B=0\r\n");
 
-	T3IF = 0;	// important to clear this bit
+	_T3IF = 0;	// important to clear this bit
 }
 
 
@@ -954,8 +1041,8 @@ void fireSoftTrigger(unsigned char aTriggerId)
 	unsigned char RD5_Old;
 	unsigned char RD6_Old;
 
-	RD5_Old = RD5;
-	RD6_Old = RD6;
+	RD5_Old = _RD5;
+	RD6_Old = _RD6;
 
 //	outputString(&Uart1, "ST \r\n");
 //
@@ -970,12 +1057,10 @@ void fireSoftTrigger(unsigned char aTriggerId)
 	if (aTriggerId & 0x01) {
 		if (Trig1_Timer2_Enabled && T2CONbits.TON == 0) {
 			_TRISD5 = 0;				// enable RD5 as input RD5 is shared with CN14
-			#asm
-			nop
-			nop
-			nop
-			#endasm
-    		RD5 = !RD5_Old;
+			asm("nop");
+			asm("nop");
+			asm("nop");
+    		_RD5 = !RD5_Old;
 //			outputString(&Uart1, "RD5 = Trig1_Timer2_Edge : ");
 //			outputIntAsString(&Uart1, Trig1_Timer2_Edge);
 //			outputString(&Uart1, " RD5_Old = ");
@@ -985,12 +1070,10 @@ void fireSoftTrigger(unsigned char aTriggerId)
 
 		if (Trig1_Timer3_Enabled && T3CONbits.TON == 0) {
 			_TRISD5 = 0;				// enable RD5 as input RD5 is shared with CN14
-			#asm
-			nop
-			nop
-			nop
-			#endasm
-    		RD5 = !RD5_Old ;
+			asm("nop");
+			asm("nop");
+			asm("nop");
+    		_RD5 = !RD5_Old ;
 //			outputString(&Uart1, "RD5 = Trig1_Timer3_Edge : ");
 //			outputIntAsString(&Uart1, Trig1_Timer3_Edge);
 //			outputString(&Uart1, " RD5_Old = ");
@@ -1031,8 +1114,9 @@ void fireSoftTrigger(unsigned char aTriggerId)
 	delay_us(50);
 
 	if (aTriggerId & 0x01) {
-		RD5 = RD5_Old;
+		_RD5 = RD5_Old;
 		_TRISD5 = 1;				// enable RD5 as input RD5 is shared with CN14
+		_RD5 = RD5_Old;
 	}
 //
 //	if (aTriggerId & 0x02) {
@@ -1040,11 +1124,9 @@ void fireSoftTrigger(unsigned char aTriggerId)
 //		_TRISD6 = 0;				// enable RD6 as input RD56
 //	}
 
-	#asm
-	nop
-	nop
-	nop
-	#endasm
+	asm("nop");
+	asm("nop");
+	asm("nop");
 //	outputString(&Uart1, "STD\r\n");
 }
 
@@ -1077,7 +1159,7 @@ void processNextSequence(void)
 	//if the next bank in the sequence is different from the previous, then
 	//reprogram the hardware with new bank settings
 	if (BankSequence[BankSequencePos] != BankLastUsedId) {
-		programBank(&BankInfo[ BankSequence[BankSequencePos] ]);
+		programBank(&theBankInfo[ BankSequence[BankSequencePos] ]);
 	}
 
 	//restore the input trigger settings
@@ -1090,3 +1172,5 @@ void setActiveBank(unsigned short activeBank)
 {
 	//TODO implement
 }
+
+

@@ -17,7 +17,7 @@
 // DO NOT FORGET TO CHANGE IT ACCORDING TO YOUR CRYSTAL CLOCK
 //-----------------------------------------------------------------------------------------
 
-//#define USE_30_MHZ
+#define USE_30_MHZ
 
 #ifdef USE_30_MHZ
 	// 7.37Mhz crystal in 16X PLL mode
@@ -37,10 +37,9 @@
 #define VERSION_BUILD 1
 
 //-----------------------------------------------------------------------------------------
-// the UART receiving buffer
+// the UART1 receiving buffer
 //-----------------------------------------------------------------------------------------
-#define RX_BUFFER_MAX 1024
-typedef struct tag_UARTBuff
+typedef struct tag_UARTBuff1
 {
 	unsigned short	m_RXHead;					// pointer to the head of the message
 	unsigned short	m_RXTail;					// pointer to the end of the receiving buffer
@@ -48,9 +47,64 @@ typedef struct tag_UARTBuff
 //	unsigned long	m_timeout;					// when this counter reaches FFFF FFFF all the data in the buffer will be deleted
 	unsigned short	m_UartID;					// the ID of the UART that handles this buffer
 												//
-	unsigned char 	m_RXBuffer[RX_BUFFER_MAX];	// the circular buffer where we will store the incoming characters from UART
+	#define RX1_BUFFER_MAX 1024
+	unsigned char 	m_RXBuffer[RX1_BUFFER_MAX];	// the circular buffer where we will store the incoming characters from UART
 
-} TUartBuff;
+} TUartBuff1;
+
+
+//-----------------------------------------------------------------------------------------
+// the UART2 receiving buffer
+// To minimize memory usage it uses shorter version of RX buffer
+//-----------------------------------------------------------------------------------------
+typedef struct tag_UARTBuff2
+{
+	unsigned short	m_RXHead;					// pointer to the head of the message
+	unsigned short	m_RXTail;					// pointer to the end of the receiving buffer
+	unsigned long 	m_baud_rate;				// stored current baud rate for the UART
+//	unsigned long	m_timeout;					// when this counter reaches FFFF FFFF all the data in the buffer will be deleted
+	unsigned short	m_UartID;					// the ID of the UART that handles this buffer
+												//
+	#define RX2_BUFFER_MAX 512
+	unsigned char 	m_RXBuffer[RX2_BUFFER_MAX];	// the circular buffer where we will store the incoming characters from UART
+
+} TUartBuff2;
+
+
+
+//-----------------------------------------------------------------------------------------
+// enum that describes the flags that are stored in the flash
+//-----------------------------------------------------------------------------------------
+//typedef enum tag_TFlashInfoFlags
+//{
+//	fifUnknown		= 0x0000,
+//	fifAutoLoad		= 0x0001,		// automaticaly load the parameters from flash on bootup
+//	fifUseBanks		= 0x0002,		// Use banks
+//} TFlashInfoFlags;
+
+////-----------------------------------------------------------------------------------------
+//// the flash info structure. This structure is stored in the flash memory
+////-----------------------------------------------------------------------------------------
+//typedef struct tag_TFlashInfo
+//{
+//	unsigned short m_signature1;		// the begin signature == 0x2512
+//	unsigned short m_structVersion;		// the version of the flash data structure
+//
+//	unsigned long m_flags;				// various flags that control how we can use data from flash
+//
+//	unsigned short m_activeBank;		// currently selected bank
+//
+//	unsigned long m_uart1_baud_rate;	// stored rate for UART 1
+//	unsigned long m_uart2_baud_rate;	// stored rate for UART 2
+//
+//	TBankInfo m_bankInfo[4];			// the data for each output bank
+//
+//	unsigned char  m_bankSequence[512];	// the trigger sequence that we will use
+//	unsigned short m_bankSequenceEnd;	// the position AFTER the last valid element
+//
+//	unsigned short m_signature2;		// the end signature == 0x2008
+//} TFlashInfo;
+
 
 #if 1
 #define DbgOut(X) outputString_UART2(X)

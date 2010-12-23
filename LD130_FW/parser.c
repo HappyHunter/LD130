@@ -16,13 +16,12 @@
 
 
 //Command Patterns
-const char * const CmdTemplates[PATTERNS_COUNT] =
+const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))) =
 {
    "getver",
    "version,vermajor,verminor,verbuild",
 
 
-//  unsigned short	m_command;		// == TCommandList::ld130_SetHeadData
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
 //  unsigned short	m_voltage;		// 0 - 100 Volts
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
@@ -31,7 +30,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
    "sethdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
@@ -49,12 +48,12 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
     "hdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
-//  unsigned short	m_bankId;		// 0, 1, 2, 3
+//  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
 //  unsigned short	m_voltage;		// 0 - 100 Volts
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
@@ -63,12 +62,12 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
     "setbankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
-//  unsigned short	m_bankId;		// 0, 1, 2, 3
+//  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
     "getbankdata,bankId,headId",
     "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
@@ -112,20 +111,20 @@ char CmdName[STRING_NAME_LENGTH+1];
  * we will store the variable names here, the max length of the
  * variable is controlled by STRING_NAME_LENGTH
  */
-char VarNames[VALUES_COUNT][STRING_NAME_LENGTH+1];
+char VarNames[VALUES_COUNT][STRING_NAME_LENGTH+1];	//49*16=784b
 
 /**
  * after parsing the incoming string we will store actual values
  * here
  */
-char VarValues[VALUES_COUNT][STRING_VALUE_LENGTH+1];
+char VarValues[VALUES_COUNT][STRING_VALUE_LENGTH+1];	//49*10 = 490
 
 /**
  * mapping of the variable names in pattern to the variable
  * index in our two arrays VarNames and VarValues
  *
  */
-unsigned char ValuesIdx[PATTERNS_COUNT][MAX_VALUES_IN_PATTERN];
+__eds__ unsigned char ValuesIdx[PATTERNS_COUNT][MAX_VALUES_IN_PATTERN] __attribute__ ((space(eds)));// 27*50=1350
 
 /**
  * the separator character between values
@@ -446,10 +445,15 @@ const char * GetValueByName(const char * pName)
         name = (const char *) VarNames[i];
         if(strcmp(pName, name)==0)
         {
+			DbgOut("{");
+			DbgOut(pName);
+			DbgOut("=");
+			DbgOut(VarValues[i]);
+			DbgOut("} ");
             return (const char *) VarValues[i];
         }
     }
-    return 0; //variable not found
+    return ""; //variable not found
 
 }
 
@@ -464,6 +468,33 @@ const char * GetCmdName()
     return CmdName;
 }
 
+
+//-----------------------------------------------------------------------------------------
+/**
+ * IsValidInteger() returns 1 if the value is valid integer number including +- sign
+ *
+ * @return unsigned char - 1 variable is valid integer, 0 - varibale is invalid integer
+ */
+unsigned char IsValidInteger(const char * pName)
+{
+    unsigned char i;
+    const char * name;
+
+    for(i = 0; i < VALUES_COUNT; ++i)
+    {
+        name = (const char *) VarNames[i];
+        while(name && *name)
+        {
+            if((*name<'0' || *name > '9') && *name != '+' && *name !='-')
+            {
+                return 0;
+            }
+            ++name;
+        }
+        return 1;   // number is OK
+    }
+    return 1; //variable not found
+}
 //-----------------------------------------------------------------------------------------
 #if 0
 void test()

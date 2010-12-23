@@ -26,8 +26,8 @@ void outputIntAsString_UART2(unsigned long aValue);
 extern OST_CSEM  Uart1_Msg;
 extern OST_CSEM  Uart2_Msg;
 
-extern TUartBuff Uart1;
-extern TUartBuff Uart2;
+extern TUartBuff1 Uart1;
+extern TUartBuff2 Uart2;
 
 //#define UartDbg Uart2
 //
