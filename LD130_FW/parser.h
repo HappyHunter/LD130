@@ -94,7 +94,10 @@ const char * GetCmdName();
 /**
  * IsValidInteger() returns the last parsed command name
  *
- * @return unsigned char - 1 variable is valid integer, 0 - varibale is invalid integer
+ * @return unsigned char
+ *  0 - varibale is invalid integer
+ *  1 - variable is valid integer,
+ *  2 - variable is empty
  */
 #ifdef __cplusplus
 extern "C"

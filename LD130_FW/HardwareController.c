@@ -23,12 +23,12 @@
 // If we choose the bank sequence then the hardware wil be reprogrammed after
 // each trigger
 //-----------------------------------------------------------------------------------------
-TBankInfo 		theBankInfo[4];
+static TBankInfo 		theBankInfo[4];
 
 /*
 * The status of the output heads after programming
 */
-TBankHeadStatus theHeadStatus[2];
+static TBankHeadStatus theHeadStatus[2];
 
 //unsigned char ActiveBank = 0;
 //-----------------------------------------------------------------------------------------
@@ -41,14 +41,14 @@ TBankHeadStatus theHeadStatus[2];
 //
 // The sequence can be reset by a message or by an IO *****TBD*****
 //-----------------------------------------------------------------------------------------
-unsigned char BankSequence[512];	// the sequence of IDs of the banks
-unsigned short BankSequencePos = 0;	// the current position in the sequence
-unsigned short BankSequenceEnd = 0;	// the position AFTER the last valid element, can be used as a sequence length
-unsigned short BankLastUsedId  = 0;	// the last used bank ID, we will check if ID is the same no need to reprogram the hardware
+static unsigned char 	BankSequence[512];	// the sequence of IDs of the banks
+static unsigned short 	BankSequencePos = 0;	// the current position in the sequence
+static unsigned short 	BankSequenceEnd = 0;	// the position AFTER the last valid element, can be used as a sequence length
+static unsigned short 	BankLastUsedId  = 1;	// the last used bank ID, we will check if ID is the same no need to reprogram the hardware
 
 
 // The flags from the flash that control some hardware stuff
-unsigned long TheFlashFlags;
+static unsigned long TheFlashFlags;
 
 
 /*
@@ -1036,6 +1036,8 @@ void resetAllDACs()
 
 
 //-----------------------------------------------------------------------------------------
+// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+
 void fireSoftTrigger(unsigned char aTriggerId)
 {
 	unsigned char RD5_Old;
@@ -1168,9 +1170,41 @@ void processNextSequence(void)
 }
 
 //-----------------------------------------------------------------------------------------
-void setActiveBank(unsigned short activeBank)
+unsigned char setActiveBank(unsigned short anActiveBank, unsigned char bForcePrograming)
 {
-	//TODO implement
+	if (anActiveBank < 1) anActiveBank = 1;
+	if (anActiveBank > 4) anActiveBank = 4;
+
+	if (BankLastUsedId != anActiveBank || bForcePrograming) {
+		BankLastUsedId = anActiveBank;
+		#if 0
+		programBank(&theBankInfo[anActiveBank-1]);
+		#endif
+		return 1;
+	}
+	return 0;
 }
 
+//-----------------------------------------------------------------------------------------
+unsigned short getActiveBank()
+{
+	return BankLastUsedId;
+}
+
+
+//-----------------------------------------------------------------------------------------
+unsigned long getConfigFlags()
+{
+	return TheFlashFlags;
+}
+
+//-----------------------------------------------------------------------------------------
+void setBankSequenceAt(unsigned short aBankId, unsigned short anIndex)
+{
+	if (anIndex < sizeof(BankSequence)/sizeof(BankSequence[0])) {
+		if (aBankId < 1) aBankId = 1;
+		if (aBankId > 4) aBankId = 4;
+		BankSequence[anIndex] = aBankId;
+	}
+}
 

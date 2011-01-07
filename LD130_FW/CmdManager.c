@@ -25,23 +25,30 @@ extern TBankHeadStatus theHeadStatus[2];
 //Command Patterns
 const char * const ErrorStrings[] __attribute__ ((space(auto_psv))) =
 {
-	"",
-	"ERR,00000001,outputId,Must be between 1 and 2\r\n",
-	"ERR,00000002,voltage,Must be between 0 and 10000 Volts\r\n",
-	"ERR,00000003,powerChanel1,Must be between 0 and 10000\% \r\n",
-	"ERR,00000004,powerChanel2,Must be between 0 and 10000\% \r\n",
-	"ERR,00000005,powerChanel3,Must be between 0 and 10000\% \r\n",
-	"ERR,00000006,powerChanel4,Must be between 0 and 10000\% \r\n",
-	"ERR,00000007,triggerEdge,Must be 0,1 or 2\r\n",
-	"ERR,00000008,triggerId,Must be 1,2 or 3\r\n",
-	"ERR,00000009,chanelAmplifier,Must be between 1 and 2\r\n",
+/*0000*/, "",
+/*0001*/,"ERR,00000001,outputId,Must be between 1 and 2\r\n",
+/*0002*/,"ERR,00000002,voltage,Must be between 0 and 10000 Volts\r\n",
+/*0003*/,"ERR,00000003,powerChanel1,Must be between 0 and 10000\% \r\n",
+/*0004*/,"ERR,00000004,powerChanel2,Must be between 0 and 10000\% \r\n",
+/*0005*/,"ERR,00000005,powerChanel3,Must be between 0 and 10000\% \r\n",
+/*0006*/,"ERR,00000006,powerChanel4,Must be between 0 and 10000\% \r\n",
+/*0007*/,"ERR,00000007,triggerEdge,Must be 0,1 or 2\r\n",
+/*0008*/,"ERR,00000008,triggerId,Must be 1,2 or 3\r\n",
+/*0009*/,"ERR,00000009,chanelAmplifier,Must be between 1 and 2\r\n",
+/*0010*/,"ERR,00000010,strobeDelay,is not valid integer\r\n",
+/*0011*/,"ERR,00000011,strobeWidth,is not valid integer\r\n",
+/*0012*/,"ERR,00000012,bankId,Must be between 1 and 4\r\n",
 };
 
 
 void sendVersionReply();
 
 void setHeadData();
-
+void sendHeadStatus(unsigned short anOutputId);
+void sendHeadData();
+void setBankData();
+void sendBankData();
+void setSequenceData();
 
 void InitCmdManager (void)
 {
@@ -67,6 +74,8 @@ void Task_UART1 (void)
 	static unsigned short msgCmdEnd = 0;	// the end of the message
 
 	static unsigned char ch = 0;			// the current character being processed
+
+	static const char* pTmpValue = 0;		// temp pointer to a value
 
 	Start_UART1();
 
@@ -120,12 +129,74 @@ void Task_UART1 (void)
 			if (strcmp(GetCmdName(), "getver") == 0) {
 				sendVersionReply();
 				continue;
-
 			} else
+
 			if (strcmp(GetCmdName(), "sethdata") == 0) {
 				setHeadData();
 				continue;
+			} else
 
+			if (strcmp(GetCmdName(), "gethstatus") == 0) {
+				pTmpValue = GetValueByName("outputId");		// 1 - head 1, 2 - Head 2
+				if (IsValidInteger(pTmpValue) != 1) {
+					outputString_UART1(ErrorStrings[1]);
+					continue;
+				}
+				sendHeadStatus(atoi(pTmpValue));
+				continue;
+			} else
+
+			if (strcmp(GetCmdName(), "gethdata") == 0) {
+				sendHeadData();
+				continue;
+			} else
+
+			if (strcmp(GetCmdName(), "setbankdata") == 0) {
+				setBankData();
+				continue;
+			} else
+
+			if (strcmp(GetCmdName(), "getbankdata") == 0) {
+				sendBankData();
+				continue;
+			} else
+
+			if (strcmp(GetCmdName(), "getcfgdata") == 0) {
+
+				//"cfgdata,flags,activeBank",
+				outputString_UART1("cfgdata,");
+				outputIntAsString_UART1(getConfigFlags());
+				outputString_UART1(",");
+				outputIntAsString_UART1(getActiveBank());
+				outputString_UART1("\r\n");
+
+				continue;
+			} else
+
+			if (strcmp(GetCmdName(), "softtrig") == 0) {
+				pTmpValue = GetValueByName("triggerId");		// 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+				if (IsValidInteger(pTmpValue) != 1) {
+					outputString_UART1(ErrorStrings[1]);
+					continue;
+				}
+				fireSoftTrigger(atoi(pTmpValue));
+				continue;
+			} else
+
+
+			if (strcmp(GetCmdName(), "setseqdata") == 0) {
+				setSequenceData();
+				continue;
+			} else
+
+
+			if (strcmp(GetCmdName(), "") == 0) {
+				continue;
+			} else
+
+
+			if (strcmp(GetCmdName(), "") == 0) {
+				continue;
 			}
 
 
@@ -197,17 +268,20 @@ void sendVersionReply()
 *
 *
 *  Output:
-*    "hstatus,statusChanel1,statusChanel2,statusChanel3,statusChanel4\r\n"
+*    "hstatus,bankId,statusChanel1,statusChanel2,statusChanel3,statusChanel4\r\n"
 *
 */
 //------------------------------------------------------------------------------
 void setHeadData()
 {
-	TBankHeadData theHeadData;
+	static const char* 		pValue;
+	static TBankHeadData 	theHeadData;
 
-	unsigned short theOutputId;
-	theOutputId = atoi(GetValueByName("outputId"));
-	if (theOutputId < 1 || theOutputId > 2 || !IsValidInteger("outputId")) {
+	static unsigned short 	theOutputId;
+
+	pValue = GetValueByName("outputId");		// 1 - head 1, 2 - Head 2
+	theOutputId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theOutputId < 1 || theOutputId > 2) {
 		outputString_UART1(ErrorStrings[1]);
 		return ;
 	}
@@ -217,74 +291,426 @@ void setHeadData()
 	theHeadData = theBankInfo[0].m_output[theOutputId-1];
 
 
-	theHeadData.m_voltage = atoi(GetValueByName("voltage"));		// 0 - 100 Volts
-	if (!IsValidInteger("voltage") || theHeadData.m_voltage > 10000) {
+
+	pValue = GetValueByName("voltage");			// 0 - 100 Volts
+	theHeadData.m_voltage = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 10000) {
 		outputString_UART1(ErrorStrings[2]);
 		return ;
 	}
 
-	theHeadData.m_powerChanel1 = atoi(GetValueByName("powerChanel1"));		// 0 - 100 Volts
-	if (!IsValidInteger("powerChanel1") || theHeadData.m_powerChanel1 > 10000) {
+	pValue = GetValueByName("powerChanel1");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel1 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel1 > 10000) {
 		outputString_UART1(ErrorStrings[3]);
 		return ;
 	}
 
-	theHeadData.m_powerChanel2 = atoi(GetValueByName("powerChanel2"));		// 0 - 100 Volts
-	if (!IsValidInteger("powerChanel2") || theHeadData.m_powerChanel2 > 10000) {
+	pValue = GetValueByName("powerChanel2");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel2 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel2 > 10000) {
 		outputString_UART1(ErrorStrings[4]);
 		return ;
 	}
 
-	theHeadData.m_powerChanel3 = atoi(GetValueByName("powerChanel3"));		// 0 - 100 Volts
-	if (!IsValidInteger("powerChanel3") || theHeadData.m_powerChanel3 > 10000) {
+	pValue = GetValueByName("powerChanel3");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel3 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel3 > 10000) {
 		outputString_UART1(ErrorStrings[5]);
 		return ;
 	}
 
-	theHeadData.m_powerChanel4 = atoi(GetValueByName("powerChanel4"));		// 0 - 100 Volts
-	if (!IsValidInteger("powerChanel4") || theHeadData.m_powerChanel4 > 10000) {
+	pValue = GetValueByName("powerChanel4");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel4 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel4 > 10000) {
 		outputString_UART1(ErrorStrings[6]);
 		return ;
 	}
 
-	theHeadData.m_strobeDelay = atoi(GetValueByName("strobeDelay"));		// 0 - 100 Volts
-	theHeadData.m_strobeWidth = atoi(GetValueByName("strobeWidth"));		// 0 - 100 Volts
+	pValue = GetValueByName("strobeDelay");		// the delay of outcoming light strobe in microseconds
+	theHeadData.m_strobeDelay = atoi(pValue);
+	if (!IsValidInteger(pValue)) {
+		outputString_UART1(ErrorStrings[10]);
+		return ;
+	}
 
-	theHeadData.m_triggerEdge = atoi(GetValueByName("triggerEdge"));		// 0 - 100 Volts
-	if (!IsValidInteger("triggerEdge") || theHeadData.m_triggerEdge > 2) {
+	pValue = GetValueByName("strobeWidth");		// the duration of outcoming light strobe in microseconds
+	theHeadData.m_strobeWidth = atoi(pValue);
+	if (!IsValidInteger(pValue)) {
+		outputString_UART1(ErrorStrings[11]);
+		return ;
+	}
+
+	pValue = GetValueByName("triggerEdge");		// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+	theHeadData.m_triggerEdge = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_triggerEdge > 2) {
 		outputString_UART1(ErrorStrings[7]);
 		return ;
 	}
 
-	theHeadData.m_triggerId = atoi(GetValueByName("triggerId"));		// 0 - 100 Volts
-	if (!IsValidInteger("triggerId") || theHeadData.m_triggerId > 3) {
+	pValue = GetValueByName("triggerId");		// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+	theHeadData.m_triggerId = atoi(pValue);		// 0 - 100 Volts
+	if (!IsValidInteger(pValue) || theHeadData.m_triggerId > 3) {
 		outputString_UART1(ErrorStrings[8]);
 		return ;
 	}
 
-	theHeadData.m_chanelAmplifier = atoi(GetValueByName("chanelAmplifier"));		// 0 - 100 Volts
-	if (!IsValidInteger("chanelAmplifier") || theHeadData.m_chanelAmplifier > 3) {
+	pValue = GetValueByName("chanelAmplifier");	// the amplification value 1-5
+	theHeadData.m_chanelAmplifier = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 3) {
 		outputString_UART1(ErrorStrings[9]);
 		return ;
 	}
 
 
 	// OK, the verification is completed copy the data back to main variable
-	theBankInfo[0].m_output[theOutputId] = theHeadData;
+	theBankInfo[0].m_output[theOutputId-1] = theHeadData;
 
-	// and program the hardware using our bankID = 1
-	#if 0
-	programBank(&theBankInfo[0]);
-	#endif
+	// and program the hardware using our bankID
+	setActiveBank(1/*bankID=1*/, 1/* force re-programming*/)
+
+	sendHeadStatus(theOutputId);
+}
+
+
+/**
+ * Sends back the status of the head
+ *
+ * @parameters anOutputId 1 - head 1, 2 - Head 2
+ */
+//------------------------------------------------------------------------------
+void sendHeadStatus(unsigned short anOutputId)
+{
+	if (anOutputId < 1 || anOutputId > 2) {
+		outputString_UART1(ErrorStrings[1]);
+		return;
+	}
 
 	// send back the reply
 	outputString_UART1("hstatus,");
-	outputIntAsString_UART1(theHeadStatus[theOutputId-1].m_chanelStatusFlags[0]);
+	outputIntAsString_UART1(getActiveBank());
 	outputString_UART1(",");
-	outputIntAsString_UART1(theHeadStatus[theOutputId-1].m_chanelStatusFlags[1]);
+	outputIntAsString_UART1(theHeadStatus[anOutputId-1].m_chanelStatusFlags[0]);
 	outputString_UART1(",");
-	outputIntAsString_UART1(theHeadStatus[theOutputId-1].m_chanelStatusFlags[2]);
+	outputIntAsString_UART1(theHeadStatus[anOutputId-1].m_chanelStatusFlags[1]);
 	outputString_UART1(",");
-	outputIntAsString_UART1(theHeadStatus[theOutputId-1].m_chanelStatusFlags[3]);
+	outputIntAsString_UART1(theHeadStatus[anOutputId-1].m_chanelStatusFlags[2]);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadStatus[anOutputId-1].m_chanelStatusFlags[3]);
 	outputString_UART1("\r\n");
 }
+
+/**
+* sendHeadData() sends back the data for the output ID specified
+*  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
+*  unsigned short	m_voltage;		// 0 - 100 Volts
+*  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
+*  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
+*  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
+*  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
+*  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
+*  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
+*  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+*  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+*  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
+*/
+//------------------------------------------------------------------------------
+void sendHeadData()
+{
+	static const char* 		pValue;
+	static TBankHeadData 	theHeadData;
+
+	static unsigned short 	theOutputId;
+
+	pValue = GetValueByName("outputId");		// 1 - head 1, 2 - Head 2
+	theOutputId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theOutputId < 1 || theOutputId > 2) {
+		outputString_UART1(ErrorStrings[1]);
+		return ;
+	}
+
+	// copy the data into our temp variable
+	// with set head data we will always use bankID=1 (index 0)
+	theHeadData = theBankInfo[0].m_output[theOutputId-1];
+
+	// send back the reply
+    //"hdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+	outputString_UART1("hdata,");
+	outputIntAsString_UART1(theHeadData.m_voltage);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel1);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel2);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel3);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel4);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_strobeDelay);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_strobeWidth);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_triggerEdge);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_triggerId);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_chanelAmplifier);
+	outputString_UART1("\r\n");
+}
+
+/**
+* setBankData() sets the parameters for the bank specified
+* The function will reprogram hardware if the current active
+* bank is the same as we are programming
+*
+*  Message input:
+*  "setbankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+*
+*  unsigned short	m_bankId;		// 1, 2, 3, 4
+*  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
+*  unsigned short	m_voltage;		// 0 - 100 Volts
+*  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
+*  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
+*  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
+*  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
+*  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
+*  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
+*  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+*  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+*  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
+*
+*  Output:
+*    "hstatus,bankId,statusChanel1,statusChanel2,statusChanel3,statusChanel4\r\n"
+*
+*/
+//------------------------------------------------------------------------------
+void setBankData()
+{
+	static const char* 		pValue;
+	static TBankHeadData 	theHeadData;
+
+	static unsigned short 	theOutputId;
+	static unsigned short 	theBankId;
+
+	pValue = GetValueByName("bankId");		// 1, 2, 3, 4
+	theBankId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theBankId < 1 || theBankId > 4) {
+		outputString_UART1(ErrorStrings[12]);
+		return ;
+	}
+
+	pValue = GetValueByName("outputId");		// 1 - head 1, 2 - Head 2
+	theOutputId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theOutputId < 1 || theOutputId > 2) {
+		outputString_UART1(ErrorStrings[1]);
+		return ;
+	}
+
+	// copy the data into our temp variable
+	// with set head data we will use bankID-1 as an index
+	theHeadData = theBankInfo[theBankId-1].m_output[theOutputId-1];
+
+
+	pValue = GetValueByName("voltage");			// 0 - 100 Volts
+	theHeadData.m_voltage = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 10000) {
+		outputString_UART1(ErrorStrings[2]);
+		return ;
+	}
+
+	pValue = GetValueByName("powerChanel1");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel1 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel1 > 10000) {
+		outputString_UART1(ErrorStrings[3]);
+		return ;
+	}
+
+	pValue = GetValueByName("powerChanel2");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel2 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel2 > 10000) {
+		outputString_UART1(ErrorStrings[4]);
+		return ;
+	}
+
+	pValue = GetValueByName("powerChanel3");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel3 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel3 > 10000) {
+		outputString_UART1(ErrorStrings[5]);
+		return ;
+	}
+
+	pValue = GetValueByName("powerChanel4");	//0 - 100 00% with fixed decimal point at 2 digits
+	theHeadData.m_powerChanel4 = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_powerChanel4 > 10000) {
+		outputString_UART1(ErrorStrings[6]);
+		return ;
+	}
+
+	pValue = GetValueByName("strobeDelay");		// the delay of outcoming light strobe in microseconds
+	theHeadData.m_strobeDelay = atoi(pValue);
+	if (!IsValidInteger(pValue)) {
+		outputString_UART1(ErrorStrings[10]);
+		return ;
+	}
+
+	pValue = GetValueByName("strobeWidth");		// the duration of outcoming light strobe in microseconds
+	theHeadData.m_strobeWidth = atoi(pValue);
+	if (!IsValidInteger(pValue)) {
+		outputString_UART1(ErrorStrings[11]);
+		return ;
+	}
+
+	pValue = GetValueByName("triggerEdge");		// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+	theHeadData.m_triggerEdge = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_triggerEdge > 2) {
+		outputString_UART1(ErrorStrings[7]);
+		return ;
+	}
+
+	pValue = GetValueByName("triggerId");		// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+	theHeadData.m_triggerId = atoi(pValue);		// 0 - 100 Volts
+	if (!IsValidInteger(pValue) || theHeadData.m_triggerId > 3) {
+		outputString_UART1(ErrorStrings[8]);
+		return ;
+	}
+
+	pValue = GetValueByName("chanelAmplifier");	// the amplification value 1-5
+	theHeadData.m_chanelAmplifier = atoi(pValue);
+	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 3) {
+		outputString_UART1(ErrorStrings[9]);
+		return ;
+	}
+
+
+	// OK, the verification is completed copy the data back to main variable
+	theBankInfo[theBankId-1].m_output[theOutputId-1] = theHeadData;
+
+	// and program the hardware using our bankID, forcing it to update the hardware
+	if (getActiveBank() == theBankId) {
+		setActiveBank(theBankId/*bankID*/, 1/* force re-programming*/)
+	}
+
+	// and send back the head status
+	sendHeadStatus(theOutputId);
+}
+
+/**
+ * sendBankData() sends back the specified bank and output head
+ * data
+ *
+ *  Message input:
+ *    "getbankdata,bankId,headId",
+ *
+ *  unsigned short	m_bankId;		// 1, 2, 3, 4
+ *  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
+ *
+ *  Output:
+ *   "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+*/
+//------------------------------------------------------------------------------
+void sendBankData()
+{
+	static const char* 		pValue;
+	static TBankHeadData 	theHeadData;
+
+	static unsigned short 	theOutputId;
+	static unsigned short 	theBankId;
+
+	pValue = GetValueByName("bankId");		// 1, 2, 3, 4
+	theBankId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theBankId < 1 || theBankId > 4) {
+		outputString_UART1(ErrorStrings[12]);
+		return ;
+	}
+
+	pValue = GetValueByName("outputId");		// 1 - head 1, 2 - Head 2
+	theOutputId = atoi(pValue);
+	if (IsValidInteger(pValue) != 1 || theOutputId < 1 || theOutputId > 2) {
+		outputString_UART1(ErrorStrings[1]);
+		return ;
+	}
+
+	// copy the data into our temp variable
+	theHeadData = theBankInfo[theBankId-1].m_output[theOutputId-1];
+
+	// send back the reply
+    // "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+	outputString_UART1("bankdata,");
+	outputIntAsString_UART1(theBankId);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theOutputId);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_voltage);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel1);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel2);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel3);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_powerChanel4);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_strobeDelay);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_strobeWidth);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_triggerEdge);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_triggerId);
+	outputString_UART1(",");
+	outputIntAsString_UART1(theHeadData.m_chanelAmplifier);
+	outputString_UART1("\r\n");
+}
+
+
+/**
+ * Sets the bank sequence data
+ *  Message input:
+ *    "setseqdata,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
+ *
+ *    Each of the elemnts (s_10 ... s_400) length is 10
+ *    characters. Each character is a digit ['1','2','3','4']
+ *    representing the bank ID
+*/
+//------------------------------------------------------------------------------
+const char * const NameTemplates[] __attribute__ ((space(auto_psv))) =
+{
+	"s_10","s_20","s_30","s_40","s_50","s_60","s_70","s_80","s_90","s_100",
+	"s_110","s_120","s_130","s_140","s_150","s_160","s_170","s_180","s_190","s_200",
+	"s_210","s_220","s_230","s_240","s_250","s_260","s_270","s_280","s_290","s_300",
+	"s_310","s_320","s_330","s_340","s_350","s_360","s_370","s_380","s_390","s_400",
+};
+
+void setSequenceData()
+{
+	static const char* 		pValue;
+	static unsigned short	theIndex = 0;
+	static unsigned int 	theLength = 0;
+	static unsigned int		theLengthTmp = 0;
+
+	theLengthTmp = setSequenceDataImpl("s_10", &theIndex);
+
+}
+
+
+unsigned int setSequenceDataImpl(const char* aSeqName, unsigned short* anIndex)
+{
+	static const char* 		pValue;
+	pValue = GetValueByName(aSeqName);		// each character is a bank ID [1, 2, 3, 4]
+	// if the elemnt is empty we will stop and return 0
+	if (IsValidInteger(pValue) == 2) {
+		return 0;
+	}
+
+    // skip empty spaces before the digits
+    while(pValue && *pValue)
+    {
+		if (*pValue >= '1' && *pValue <= '4') {
+			setBankSequenceAt((*pValue) - '0', *anIndex)
+			++(*anIndex);
+		}
+        // go to next char
+        ++pName;
+    }
+}
+

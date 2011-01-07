@@ -51,7 +51,6 @@ __fastcall TFormMainWindow::TFormMainWindow(TComponent* Owner)
 : TForm(Owner)
 , m_updateActiveBank (false)
 {
-
 	m_headControlInfo.addControlGroup (0, edChanel1Head1, tbChanel1Head1);
 	m_headControlInfo.addControlGroup (0, edChanel2Head1, tbChanel2Head1);
 	m_headControlInfo.addControlGroup (0, edChanel3Head1, tbChanel3Head1);
