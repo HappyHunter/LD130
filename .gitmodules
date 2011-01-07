@@ -1,0 +1,3 @@
+[submodule "LD130"]
+	path = LD130
+	url = git@github.com:HappyHunter/LD130.git
