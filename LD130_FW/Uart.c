@@ -16,7 +16,7 @@ unsigned short Baud_Rate(unsigned long A_BAUD_) { return ((unsigned short)(A_FOS
 void outputIntAsHexString(int aPort, unsigned long aValue);
 void outputIntAsString(int aPort, unsigned long aValue);
 
-TUartBuff Uart1;
+TUartBuff1 Uart1;
 
 // the counting message semaphore for UART 1
 // every time we detect the end of message
@@ -128,6 +128,9 @@ void Start_UART1 (void)
 	Uart1.m_UartID = 1;        	// the ID is 1
 	Uart1.m_baud_rate = Uart1_Baud_Rate;
 
+//	_TRISD6 = 0;
+
+
 }
 
 
@@ -148,6 +151,11 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 		// now start reading the data from UART
 		do {
+			//**********************************************************************************************************************************************
+			// Debug LED blinking
+			//**********************************************************************************************************************************************
+			_LATD4 = !_LATD4;
+
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {
@@ -165,7 +173,7 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 				++Uart1.m_RXTail;
 
 				// if we reach the end of the buffer set it to 0
-				if (Uart1.m_RXTail >= RX_BUFFER_MAX)
+				if (Uart1.m_RXTail >= RX1_BUFFER_MAX)
 					Uart1.m_RXTail = 0;
 			}
 
@@ -219,7 +227,7 @@ void outputIntAsString_UART1(unsigned long aValue)
  *                                                                              *
  ********************************************************************************/
 
-TUartBuff Uart2;
+TUartBuff2 Uart2;
 
 // the counting message semaphore for UART 1
 // every time we detect the end of message
@@ -367,7 +375,7 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 				++Uart2.m_RXTail;
 
 				// if we reach the end of the buffer set it to 0
-				if (Uart2.m_RXTail >= RX_BUFFER_MAX)
+				if (Uart2.m_RXTail >= RX2_BUFFER_MAX)
 					Uart2.m_RXTail = 0;
 			}
 

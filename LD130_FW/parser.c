@@ -4,7 +4,7 @@
 //
 ////////////////////////////////////////////////////////////////////
 
-#ifdef __BORLANDC__
+#if defined(_MSC_VER) || defined(__BORLANDC__)
 #else
     #include <p30fxxxx.h>
     #include "osa.h"
@@ -16,13 +16,16 @@
 
 
 //Command Patterns
-const char * const CmdTemplates[PATTERNS_COUNT] =
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+const char * const CmdTemplates[PATTERNS_COUNT]  =
+#else
+const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))) =
+#endif
 {
    "getver",
-   "version,vermajor,verminor,verbuild",
+   "version,sernum,vermajor,verminor,verbuild",
 
 
-//  unsigned short	m_command;		// == TCommandList::ld130_SetHeadData
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
 //  unsigned short	m_voltage;		// 0 - 100 Volts
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
@@ -31,16 +34,15 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
-   "sethdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+    "sethdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
-    "hstatus,statusChanel1,statusChanel2,statusChanel3,statusChanel4",
-    "gethstatus,headId",
+    "hstatus,bankId,statusChanel1,statusChanel2,statusChanel3,statusChanel4",
+    "gethstatus,outputId",
 
-    "gethdata,headId",
-//  unsigned short	m_command;		// == TCommandList::ld130_SetHeadData
+    "gethdata,outputId",
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
 //  unsigned short	m_voltage;		// 0 - 100 Volts
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
@@ -49,12 +51,12 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
     "hdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
-//  unsigned short	m_bankId;		// 0, 1, 2, 3
+//  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
 //  unsigned short	m_voltage;		// 0 - 100 Volts
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
@@ -63,12 +65,12 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 //  unsigned short	m_powerChanel4; // the power of 100.00% will be sent as 10000
 //  unsigned long	m_strobeDelay;	// the delay of outcoming light strobe in microseconds
 //  unsigned long	m_strobeWidth;	// the duration of outcoming light strobe in microseconds
-//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+//  unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 //  unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
 //  unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
     "setbankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
-//  unsigned short	m_bankId;		// 0, 1, 2, 3
+//  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
     "getbankdata,bankId,headId",
     "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
@@ -81,6 +83,9 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
 
     // the bank sequence, where each element is a bank ID (0-3)
     "setseqdata,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
+    // the reply message will contain the length of the sequence that was stored
+    "seqdatalen,seqlen",
+
     "getseqdata",
     // the index of the position currently programmed to the controller
     "seqdata,curIdx,s_10,s_20,s_30,s_40,s_50,s_60,s_70,s_80,s_90,s_100,s_110,s_120,s_130,s_140,s_150,s_160,s_170,s_180,s_190,s_200,s_210,s_220,s_230,s_240,s_250,s_260,s_270,s_280,s_290,s_300,s_310,s_320,s_330,s_340,s_350,s_360,s_370,s_380,s_390,s_400",
@@ -98,6 +103,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] =
     "setbank,bankId",
     "activebank,bankId",
 
+    "setsernum,magic,s_10,s_20,s_40",
     "OK",
     "ERR,errId,errPos,errTxt",
 };
@@ -112,21 +118,24 @@ char CmdName[STRING_NAME_LENGTH+1];
  * we will store the variable names here, the max length of the
  * variable is controlled by STRING_NAME_LENGTH
  */
-char VarNames[VALUES_COUNT][STRING_NAME_LENGTH+1];
+char VarNames[VALUES_COUNT][STRING_NAME_LENGTH+1];	//49*16=784b
 
 /**
  * after parsing the incoming string we will store actual values
  * here
  */
-char VarValues[VALUES_COUNT][STRING_VALUE_LENGTH+1];
+char VarValues[VALUES_COUNT][STRING_VALUE_LENGTH+1];	//49*10 = 490
 
 /**
  * mapping of the variable names in pattern to the variable
  * index in our two arrays VarNames and VarValues
  *
  */
-unsigned char ValuesIdx[PATTERNS_COUNT][MAX_VALUES_IN_PATTERN];
-
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+unsigned char ValuesIdx[PATTERNS_COUNT][MAX_VALUES_IN_PATTERN];// 27*50=1350
+#else
+__eds__ unsigned char ValuesIdx[PATTERNS_COUNT][MAX_VALUES_IN_PATTERN] __attribute__ ((space(eds)));// 27*50=1350
+#endif
 /**
  * the separator character between values
  */
@@ -446,10 +455,18 @@ const char * GetValueByName(const char * pName)
         name = (const char *) VarNames[i];
         if(strcmp(pName, name)==0)
         {
+#if defined(_MSC_VER) || defined(__BORLANDC__)
+#else
+			DbgOut("{");
+			DbgOut(pName);
+			DbgOut("=");
+			DbgOut(VarValues[i]);
+			DbgOut("} ");
+#endif
             return (const char *) VarValues[i];
         }
     }
-    return 0; //variable not found
+    return ""; //variable not found
 
 }
 
@@ -464,6 +481,53 @@ const char * GetCmdName()
     return CmdName;
 }
 
+
+//-----------------------------------------------------------------------------------------
+/**
+ * IsValidInteger() returns 1 if the value is valid integer number including +- sign
+ *
+ * @return unsigned char
+ *  0 - varibale is invalid integer
+ *  1 - variable is valid integer,
+ *  2 - variable is empty
+ */
+unsigned char IsValidInteger(const char * pName)
+{
+
+    // skip empty spaces before the digits
+    while(pName && *pName && *pName == ' ')
+    {
+        // go to next char
+        ++pName;
+    }
+
+    if (!pName || *pName == 0)
+        return 2;
+
+    while(pName && *pName && *pName != ' ')
+    {
+        if((*pName<'0' || *pName > '9') && *pName != '+' && *pName !='-')
+        {
+            return 0;   // not valid
+        }
+        // go to next char
+        ++pName;
+    }
+
+    // skip empty spaces after the digits
+    while(pName && *pName)
+    {
+        // if we see any other character than space so it is not a valid number then
+        if(*pName != ' ')
+        {
+            return 0;   // not valid
+        }
+        // go to next char
+        ++pName;
+    }
+
+    return 1;   // number is OK
+}
 //-----------------------------------------------------------------------------------------
 #if 0
 void test()

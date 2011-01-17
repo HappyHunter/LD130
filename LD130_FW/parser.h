@@ -12,7 +12,7 @@
 #define NOT_MATCH_INDEX 255
 
 //count of used patterns
-#define PATTERNS_COUNT 27
+#define PATTERNS_COUNT 29
 
 //maximum count of named variables
 #define VALUES_COUNT 49
@@ -89,6 +89,20 @@ const char * GetValueByName(const char * pName);
 extern "C"
 #endif
 const char * GetCmdName();
+
+
+/**
+ * IsValidInteger() returns the last parsed command name
+ *
+ * @return unsigned char
+ *  0 - varibale is invalid integer
+ *  1 - variable is valid integer,
+ *  2 - variable is empty
+ */
+#ifdef __cplusplus
+extern "C"
+#endif
+unsigned char IsValidInteger(const char * pName);
 
 #endif
 

@@ -9,10 +9,13 @@
 #include <p30fxxxx.h>
 #include "osa.h"
 #include "SPI.h"
-#include "Uart.h"
+//#include "Uart.h"
 
 extern void delay_us(unsigned long aTimeInMicrosec);
 
+
+static unsigned char SPI1_ChipSelectInitialized = 0;
+static unsigned char SPI2_ChipSelectInitialized = 0;
 //-----------------------------------------------------------------------------------------
 // Initalizes SPI1, no slave select, no interrupts, 8 bit mode
 //-----------------------------------------------------------------------------------------
@@ -72,16 +75,26 @@ void initSPI1(void)
 
 	SPI1STATbits.SPIEN = 1;	// enable SPI module
 
-	_TRISB7  = 0;	// Chip select - Chip 1
-	_TRISB8  = 0;	// Chip select - Chip 2
-	_TRISB9  = 0;	// Chip select - Chip 3
-	_TRISB10 = 0;	// Chip select - Chip 4
+	if (!SPI1_ChipSelectInitialized) {
 
-	_LATB7  = 1;	// Chip deselect - Chip 1
-	_LATB8  = 1;	// Chip deselect - Chip 2
-	_LATB9  = 1;	// Chip deselect - Chip 3
-	_LATB10 = 1;	// Chip deselect - Chip 4
+		SPI1_ChipSelectInitialized = 1;
 
+		_LATB7  = 1;	// Chip deselect - Chip 1
+		_LATB8  = 1;	// Chip deselect - Chip 2
+		_LATB9  = 1;	// Chip deselect - Chip 3
+		_LATB10 = 1;	// Chip deselect - Chip 4
+
+		_TRISB7  = 0;	// Chip select - Chip 1
+		_TRISB8  = 0;	// Chip select - Chip 2
+		_TRISB9  = 0;	// Chip select - Chip 3
+		_TRISB10 = 0;	// Chip select - Chip 4
+
+		_LATB7  = 1;	// Chip deselect - Chip 1
+		_LATB8  = 1;	// Chip deselect - Chip 2
+		_LATB9  = 1;	// Chip deselect - Chip 3
+		_LATB10 = 1;	// Chip deselect - Chip 4
+
+	}
 }
 
 //-----------------------------------------------------------------------------------------
@@ -148,20 +161,21 @@ void SPI1_ChipSelect(unsigned char aChip)
 void SPI1_ChipSelect_Single(unsigned char aChip, unsigned char bSelected)
 {
 	switch (aChip) {
-		case 0: _LATB7  = bSelected ? 0 : 1; break; // Chip select - Chip 1
-		case 1: _LATB8  = bSelected ? 0 : 1; break; // Chip select - Chip 2
-		case 2: _LATB9  = bSelected ? 0 : 1; break; // Chip select - Chip 3
-		case 3: _LATB10  = bSelected ? 0 : 1; break; // Chip select - Chip 4
+		case SPI_Chip_Select_1: _LATB7  = bSelected ; break; // Chip select - Chip 1
+		case SPI_Chip_Select_2: _LATB8  = bSelected ; break; // Chip select - Chip 2
+		case SPI_Chip_Select_3: _LATB9  = bSelected ; break; // Chip select - Chip 3
+		case SPI_Chip_Select_4: _LATB10  = bSelected; break; // Chip select - Chip 4
 	}
 }
 
 
 
 //-----------------------------------------------------------------------------------------
-// Initalizes SPI2, no slave select, no interrupts, 8 bit mode
+// Initalizes SPI2
 //-----------------------------------------------------------------------------------------
-void initSPI2(void)
+void initSPI2(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 {
+
 	SPI2STATbits.SPIEN = 0;	// disable SPI
 	_TRISG7 = 1;			// SDI2/RG7 is input
 	_TRISG6 = 0;			// SCK2/RG6 is clock output
@@ -183,17 +197,17 @@ void initSPI2(void)
 
 	SPI2CONbits.DISSDO = 0;// enable output functionality
 
-	SPI2CONbits.MODE16 = 0;// enable/disable 16bit mode
+	SPI2CONbits.MODE16 = b16Bit;// enable/disable 16bit mode
 
 	SPI2CONbits.SMP = 0;	// SPI data input sample phase bit (Master mode: SMP=0 input data sampled at middle of data output time,
 					// SMP=1 input data sampled at end of data output time; Slave mode: SMP must be cleared)
 
-	SPI2CONbits.CKE = 1;	// SPI clock edge select bit (CKE=0 serial output data changes on transition from IDLE clock state to
+	SPI2CONbits.CKE = CKE;	// SPI clock edge select bit (CKE=0 serial output data changes on transition from IDLE clock state to
 					// active clock state, CKE=1 serial output data changes on transition from active clock state to IDLE clock state)
 
 	SPI2CONbits.SSEN = 0;	// Slave select enable bit (SSEN=0 SS2 pin not used by module, SSEN=1 SS2 pin used for slave mode)
 
-	SPI2CONbits.CKP = 0;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
+	SPI2CONbits.CKP = CKP;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
  					// CKP=1 IDLE state for clock is a high level, active state is a low level)
 
 	SPI2CONbits.PPRE = 0x00;	// Primary prescale (master mode) bits 64:1
@@ -216,16 +230,27 @@ void initSPI2(void)
 
 	SPI2STATbits.SPIEN = 1;	// enable SPI module
 
-	_TRISE8  = 0;	// Chip select - Chip 1
-	_TRISE9  = 0;	// Chip select - Chip 2
-	_TRISG9  = 0;	// Chip select - Chip 3
-	_TRISC3  = 0;	// Chip select - Chip 4
+	if (!SPI2_ChipSelectInitialized) {
+		SPI2_ChipSelectInitialized = 1;
 
-	_LATE8  = 0;	// Chip select - Chip 1
-	_LATE9  = 0;	// Chip select - Chip 2
-	_LATG9  = 0;	// Chip select - Chip 3
-	_LATC3  = 0;	// Chip select - Chip 4
+		_LATE8  = 1;	// Chip select - Chip 1
+		_LATE9  = 1;	// Chip select - Chip 2
+		_LATG9  = 1;	// Chip select - Chip 3
+		_LATC3  = 1;	// Chip select - Chip 4
+		_LATC1  = 1;	// Chip select - Chip 5
 
+		_TRISE8  = 0;	// Chip select - Chip 1
+		_TRISE9  = 0;	// Chip select - Chip 2
+		_TRISG9  = 0;	// Chip select - Chip 3
+		_TRISC3  = 0;	// Chip select - Chip 4
+		_TRISC1  = 0;	// Chip select - Chip 5
+
+		_LATE8  = 1;	// Chip select - Chip 1
+		_LATE9  = 1;	// Chip select - Chip 2
+		_LATG9  = 1;	// Chip select - Chip 3
+		_LATC3  = 1;	// Chip select - Chip 4
+		_LATC1  = 1;	// Chip select - Chip 5
+	}
 }
 
 //-----------------------------------------------------------------------------------------
@@ -263,9 +288,25 @@ unsigned short SPI2_WriteRead(unsigned short data)
 //-----------------------------------------------------------------------------------------
 void SPI2_ChipSelect(unsigned char aChip)
 {
+
 	_LATE8  = (aChip & SPI_Chip_Select_1) != 0 ? 1 : 0;	// Chip select - Chip 1
 	_LATE9  = (aChip & SPI_Chip_Select_2) != 0 ? 1 : 0;	// Chip select - Chip 2
 	_LATG9  = (aChip & SPI_Chip_Select_3) != 0 ? 1 : 0;	// Chip select - Chip 3
 	_LATC3  = (aChip & SPI_Chip_Select_4) != 0 ? 1 : 0;	// Chip select - Chip 4
+	_LATC1  = (aChip & SPI_Chip_Select_5) != 0 ? 1 : 0;	// Chip select - Chip 5
+}
+
+//-----------------------------------------------------------------------------------------
+// Selects/deselects one chip for SPI communication
+//-----------------------------------------------------------------------------------------
+void SPI2_ChipSelect_Single(unsigned char aChip, unsigned char bSelected)
+{
+	switch (aChip) {
+		case SPI_Chip_Select_1: _LATE8  = bSelected; break; // Chip select - Chip 1
+		case SPI_Chip_Select_2: _LATE9  = bSelected; break; // Chip select - Chip 2
+		case SPI_Chip_Select_3: _LATG9  = bSelected; break; // Chip select - Chip 3
+		case SPI_Chip_Select_4: _LATC3  = bSelected; break; // Chip select - Chip 4
+		case SPI_Chip_Select_5: _LATC1  = bSelected; break; // Chip select - Chip 5
+	}
 }
 

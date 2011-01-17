@@ -17,7 +17,7 @@
 // SYSTEM
 //------------------------------------------------------------------------------
 
-#define OS_TASKS                3   // Number of tasks that can be active at one time
+#define OS_TASKS                5   // Number of tasks that can be active at one time
 
 
 //------------------------------------------------------------------------------
@@ -39,6 +39,18 @@
 //------------------------------------------------------------------------------
 
 #define OS_CSEM_SIZE            1   // Size of counting semaphores (1, 2 or 4)
+
+
+//------------------------------------------------------------------------------
+// BSEMS
+//------------------------------------------------------------------------------
+
+#define OS_BSEMS                1   // Number of binary semaphores
+
+enum OSA_BSEMS_ENUM
+{
+    SPI_2_Busy_Sema                  // SPI_2_Busy semaphore
+};
 
 
 

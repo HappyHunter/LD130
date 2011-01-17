@@ -18,6 +18,18 @@ typedef enum tag_ConfigDataFlags
 	fifUseBanks		= 0x0002,		// Use banks
 } TConfigDataFlags;
 
+//-----------------------------------------------------------------------------------------
+// the trigger ID bitmask
+//
+// We can select which trigger will fire output head 1 or 2
+//
+// It is done as a bit mask so we can choose both triggers to fire the same output
+//-----------------------------------------------------------------------------------------
+typedef enum {
+	TriggerID1	= 0x01,
+	TriggerID2	= 0x02,
+} TTriggerID;
+
 
 typedef struct tag_BankHeadData {
 	#ifdef __cplusplus
@@ -50,6 +62,7 @@ typedef struct tag_BankHeadData {
     unsigned short	m_triggerEdge;	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
     unsigned short	m_triggerId;	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
     unsigned short	m_chanelAmplifier;	 // the amplification value 1-5
+	unsigned char	m_reserved[16];	 //reserver for future
 } TBankHeadData;
 
 // The controller will reply this message back with the status of each chanel
@@ -68,5 +81,6 @@ typedef struct tag_HeadStatus {
     unsigned short	m_statusChanel4;
 } THeadStatus;
 
+#define MAX_NUM_OF_BANKS 4
 
 #endif
