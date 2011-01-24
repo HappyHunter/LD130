@@ -9,12 +9,14 @@
 #include "osa.h"
 #include "common.h"
 #include "Uart.h"
+#include <stdio.h>
 
 unsigned short Baud_Rate(unsigned long A_BAUD_) { return ((unsigned short)(A_FOSC_/(16UL * A_BAUD_) -1)); }
 
 // prototype functions
 void outputIntAsHexString(int aPort, unsigned long aValue);
 void outputIntAsString(int aPort, unsigned long aValue);
+void outputFloatAsString(int aPort, double aValue);
 
 TUartBuff1 Uart1;
 
@@ -23,11 +25,12 @@ TUartBuff1 Uart1;
 // we will increment the semaphore
 OST_CSEM  Uart1_Msg;
 
-
+//#define B_UART1_ECHO_ON
+//#define B_UART2_ECHO_ON
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Task_UART1                                                  *
+ *  Function:       Start_UART1                                                 *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -120,16 +123,19 @@ void Start_UART1 (void)
 
 	U1STAbits.UTXEN = 1;        // enable TX function, should be after U1_UARTEN
 
-	_U1TXIE = 0;             	// global enable/disable TX interrupt
-	_U1RXIE = 1;             	// gloabl enable/disable RX interrupt
-
 	Uart1.m_RXHead = 0;        	// init RX head
 	Uart1.m_RXTail = 0;        	// init RX tail
 	Uart1.m_UartID = 1;        	// the ID is 1
 	Uart1.m_baud_rate = Uart1_Baud_Rate;
 
-//	_TRISD6 = 0;
+	// light ON LED that the UART is initialized
+	BLINK_LED1 = 0;
+	BLINK_LED1_TRIS = 0;
 
+
+	_U1RXIF = 0;				// clear interrupt flag
+	_U1TXIE = 0;             	// global enable/disable TX interrupt
+	_U1RXIE = 1;             	// gloabl enable/disable RX interrupt
 
 }
 
@@ -159,11 +165,22 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {
+				static char ch;
+				ch = U1RXREG;
+
 				// read the character from FIFO
-				Uart1.m_RXBuffer[Uart1.m_RXTail] = U1RXREG;
+				Uart1.m_RXBuffer[Uart1.m_RXTail] = ch;
+
+				// echo test back
+				#ifdef B_UART1_ECHO_ON
+				U1TXREG = ch;
+				#endif
+
+				// blink RX LED to see if the controller got the character
+				BLINK_LED1 = !BLINK_LED1;
 
 				// check if it is endl symbol, if yes then increment message semaphore counter
-				if (Uart1.m_RXBuffer[Uart1.m_RXTail] == 0x0d)
+				if (ch == '\n' || ch == '\r')
 				{
 					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart1_Msg);
@@ -220,6 +237,14 @@ void outputIntAsString_UART1(unsigned long aValue)
 	outputIntAsString(1, aValue);
 }
 
+//-----------------------------------------------------------------------------------------
+// outputs the floating point as a string to UART
+//-----------------------------------------------------------------------------------------
+void outputFloatAsString_UART1(double aValue)
+{
+	outputFloatAsString(1, aValue);
+}
+
 
 /********************************************************************************
  *                                                                              *
@@ -238,7 +263,7 @@ OST_CSEM  Uart2_Msg;
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Task_UART2                                                  *
+ *  Function:       Start_UART2                                                  *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -330,13 +355,14 @@ void Start_UART2 (void)
 
 	U2STAbits.UTXEN = 1;        // enable TX function, should be after U1_UARTEN
 
-	_U2TXIE = 0;             	// global enable/disable TX interrupt
-	_U2RXIE = 1;             	// gloabl enable/disable RX interrupt
-
 	Uart2.m_RXHead = 0;        	// init RX head
 	Uart2.m_RXTail = 0;        	// init RX tail
 	Uart2.m_UartID = 2;        	// the ID is 2
 	Uart2.m_baud_rate = Uart2_Baud_Rate;
+
+	_U2RXIF = 0;				// clear interrupt flag
+	_U2TXIE = 0;             	// global enable/disable TX interrupt
+	_U2RXIE = 1;             	// gloabl enable/disable RX interrupt
 
 }
 
@@ -361,11 +387,19 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 			// while there is any data in the buffer
 			// read it completely
 			while (U2STAbits.URXDA) {
+				static char ch;
+				ch = U2RXREG;
+
 				// read the character from FIFO
-				Uart2.m_RXBuffer[Uart2.m_RXTail] = U2RXREG;
+				Uart2.m_RXBuffer[Uart2.m_RXTail] = ch;
+
+				#ifdef B_UART2_ECHO_ON
+				// echo test back
+				U2TXREG = ch;
+				#endif
 
 				// check if it is endl symbol, if yes then increment message semaphore counter
-				if (Uart2.m_RXBuffer[Uart2.m_RXTail] == 0x0d)
+				if (ch == '\n' || ch == '\r')
 				{
 					// signal the processing task that the message is ready
 					OS_Csem_Signal_I(Uart2_Msg);
@@ -419,6 +453,15 @@ void outputIntAsHexString_UART2(unsigned long aValue)
 void outputIntAsString_UART2(unsigned long aValue)
 {
 	outputIntAsString(2, aValue);
+}
+
+
+//-----------------------------------------------------------------------------------------
+// outputs the floating point as a string to UART
+//-----------------------------------------------------------------------------------------
+void outputFloatAsString_UART2(double aValue)
+{
+	outputFloatAsString(2, aValue);
 }
 
 ////-----------------------------------------------------------------------------------------
@@ -551,5 +594,76 @@ void outputIntAsHexString(int aPort, unsigned long aValue)
 		outputString_UART2(pCh);
 }
 
+
+//-----------------------------------------------------------------------------------------
+// outputs the integer to the UART provided. The function converts ineteger to a string
+// and then	outputs a string to UART
+//-----------------------------------------------------------------------------------------
+int snprintf(char *, size_t, const char *, ...);
+
+void outputFloatAsString(int aPort, double aValue)
+{
+	const char* pCh = 0;
+	char buf[14];
+	buf[13] = 0;
+
+	snprintf(buf, sizeof(buf) / sizeof(buf[0]), "%f", aValue);
+
+/*
+	buf[12] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[11] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[10] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[9] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[8] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[7] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[6] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[5] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[4] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[3] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[2] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[1] = (aValue % 10) + '0';
+	aValue = aValue / 10;
+
+	buf[0] = (aValue % 10) + '0';
+*/
+
+	// strip the leading zeros
+	for (pCh = buf; pCh && *pCh == '0'; ++pCh)
+		;
+
+	// in case if all are zeros, then still output 0
+	if (*pCh == 0){
+//		buf[0] = '0';	assume that there is '0' already there
+		buf[1] = 0;
+		pCh = buf;
+	}
+
+	if (aPort == 1)
+		outputString_UART1(pCh);
+	else
+		outputString_UART2(pCh);
+}
 
 

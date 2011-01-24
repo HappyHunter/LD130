@@ -10,22 +10,22 @@
 #include "../Common/LD130Common.h"
 
 
-//typedef struct tag_THeadStatus
-//{
-//	unsigned short	m_chanelStatusFlags[4];	// the bit mask status flags for each chanel
-//											// we will calculate the prescaler based on the strobe delay/width specified
-//} THeadStatus;
-
 //-----------------------------------------------------------------------------------------
-// the bank can have the individual settings for each output head
 //
-// We can have up to 4 banks of settings, and user can select which bank to use at given moment
+//
+//
 //-----------------------------------------------------------------------------------------
+
+/**
+* The bank can have the individual settings for each output head. There are 2 output Heads
+*
+* We can have up to 4 banks of settings, and user can select which bank to use at given moment
+*/
 typedef struct tag_TBankInfo
 {
 	unsigned short			m_id;			// the id of the bank
-	TBankHeadData 			m_output[2];
-	volatile unsigned short	m_strobeTimerPrescaler[2];	// prescaler 1:1 1:8 1:64 1:256
+	TBankHeadData 			m_output[MAX_NUM_OF_HEADS];
+	volatile unsigned short	m_strobeTimerPrescaler[MAX_NUM_OF_HEADS];	// prescaler 1:1 1:8 1:64 1:256
 
 	unsigned char	m_reserved[16];	// reserved for future use
 } TBankInfo;
@@ -146,25 +146,33 @@ THeadStatus* getHeadStatus(unsigned char anOutputId);
 unsigned long getTriggerCounter1();
 unsigned long getTriggerCounter2();
 
+
+/**
+ * Reprograms all the DAC settings to 0
+*/
+void resetAllDACs(void);
+
+
+/**
+ * Initializes all the input capture module properties to enable
+ * the interrupts on trigger change
+*/
 void initTrigger1(void);
 void initTrigger2(void);
 
 
 void programBank(TBankInfo* pBankInfo);
 
-void delay_us(unsigned long aTimeInMicrosec);
-
-void resetAllDACs(void);
 
 void initTrigger1Loopback(void);
 
 
 void processNextSequence(void);
 
-short setCurrentDACValue(unsigned char aHead, unsigned char aChanel, unsigned long aValue, unsigned long anAmplifierValue);
-short setVoltageDACValue(unsigned char aHead, unsigned long aValue);
-
-unsigned char headToCurrentChipSelect(unsigned char aHead);
-unsigned char headToVoltageChipSelect(unsigned char aHead);
+//short setCurrentDACValue(unsigned char aHead, unsigned char aChanel, unsigned long aValue, unsigned long anAmplifierValue);
+//short setVoltageDACValue(unsigned char aHead, unsigned long aValue);
+//
+//unsigned char headToCurrentChipSelect(unsigned char aHead);
+//unsigned char headToVoltageChipSelect(unsigned char aHead);
 
 #endif

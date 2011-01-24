@@ -56,19 +56,16 @@
 ; User preferences
 ;------------------------------------------------------------------------------
 		;.equ	DEV_MODE,	1					;xxx comment or delete this line
-<<<<<<< HEAD
-
-=======
-		
 ;		.equ 	FCY, 		15000000			;xxx speed of internal cycle clock[Hz], used to calculate uart brg and delay
 ;		config 	__FOSC, 	CSW_FSCM_OFF & XT_PLL8	;xxx oscillator
->>>>>>> ac363564120585bb91ca161a64bf611b1a9a8de3
+
 
 		.equ 	FCY, 		30000000			;xxx speed of internal cycle clock[Hz], used to calculate uart brg and delay
-		config 	__FOSC, 	CSW_FSCM_OFF & XT_PLL16	;xxx oscillator
+		config 	__FOSC, 	CSW_FSCM_OFF & FRC_PLL16	;xxx oscillator
 
-		.equ 	BAUDRATE, 	9600				;xxx baudrate
-		.equ	BLTIME,		3000				;xxx time in ms before bootloader loads the user application
+;		.equ 	BAUDRATE, 	9600				;xxx baudrate
+		.equ 	BAUDRATE, 	115200				;xxx baudrate
+		.equ	BLTIME,		5000				;xxx time in ms before bootloader loads the user application
 
        	.equ    USE_UART1,	1					;xxx uncomment to use uart1
        	;.equ	USE_UART2,	1					;xxx uncomment to use uart2

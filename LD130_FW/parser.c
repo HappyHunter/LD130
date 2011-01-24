@@ -27,7 +27,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))
 
 
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-//  unsigned short	m_voltage;		// 0 - 100 Volts
+//  unsigned short	m_voltage;		// 0 - 100 %
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
 //  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
 //  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
@@ -44,7 +44,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))
 
     "gethdata,outputId",
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-//  unsigned short	m_voltage;		// 0 - 100 Volts
+//  unsigned short	m_voltage;		// 0 - 100 %
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
 //  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
 //  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
@@ -58,7 +58,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))
 
 //  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-//  unsigned short	m_voltage;		// 0 - 100 Volts
+//  unsigned short	m_voltage;		// 0 - 100 %
 //  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
 //  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
 //  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
@@ -104,6 +104,10 @@ const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))
     "activebank,bankId",
 
     "setsernum,magic,s_10,s_20,s_40",
+
+    "getstatus",
+    "status,TH1,TH2,TAmb",
+
     "OK",
     "ERR,errId,errPos,errTxt",
 };

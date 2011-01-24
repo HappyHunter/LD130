@@ -19,14 +19,14 @@ static unsigned char SPI2_ChipSelectInitialized = 0;
 //-----------------------------------------------------------------------------------------
 // Initalizes SPI1, no slave select, no interrupts, 8 bit mode
 //-----------------------------------------------------------------------------------------
-void initSPI1(void)
+void initSPI1(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 {
 	SPI1STATbits.SPIEN = 0;	// disable SPI
 	_TRISF7 = 1;		// SDI1/RF7 is input
 	_TRISF6 = 0;		// SCK1/RF6 is clock output
 	_TRISF8 = 0;		// SDO1/RF8	is output
 
-	SPI1CONbits.MODE16 = 1;// enable/disable 16bit mode
+	SPI1CONbits.MODE16 = b16Bit;// enable/disable 16bit mode
 
 	SPI1STATbits.SPIROV = 0;	// clear the overflow buffer flag
 
@@ -47,12 +47,12 @@ void initSPI1(void)
 	SPI1CONbits.SMP = 0;	// SPI data input sample phase bit (Master mode: SMP=0 input data sampled at middle of data output time,
 							// SMP=1 input data sampled at end of data output time; Slave mode: SMP must be cleared)
 
-	SPI1CONbits.CKE = 1;	// SPI clock edge select bit (CKE=0 serial output data changes on transition from IDLE clock state to
+	SPI1CONbits.CKE = CKE;	// SPI clock edge select bit (CKE=0 serial output data changes on transition from IDLE clock state to
 							// active clock state, CKE=1 serial output data changes on transition from active clock state to IDLE clock state)
 
 	SPI1CONbits.SSEN = 0;	// Slave select enable bit (SSEN=0 SS1 pin not used by module, SSEN=1 SS1 pin used for slave mode)
 
-	SPI1CONbits.CKP = 0;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
+	SPI1CONbits.CKP = CKP;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
 							// CKP=1 IDLE state for clock is a high level, active state is a low level)
 
 	SPI1CONbits.PPRE = 0x02;	// Primary prescale (master mode) bits 64:1
@@ -115,9 +115,51 @@ void SPI1_Set16BitMode(unsigned char is16BitMode)
 	SPI1STATbits.SPIEN = 1;	// enable SPI module
 }
 //-----------------------------------------------------------------------------------------
+// Do Chip Select and then write data to SPI and then waits until the receiving is completed
+//-----------------------------------------------------------------------------------------
+unsigned short SPI1_SelectWriteRead(unsigned char aChip, unsigned short aData)
+{
+	// select the chip
+	SPI1_ChipSelect_Single(aChip, 1);
+
+	// wait some delay
+	delay_us(5);
+
+	unsigned short retVal = SPI1_WriteRead(aData);
+	delay_us(5);
+
+	// deselect the chip
+	SPI1_ChipSelect_Single(aChip, 0);
+
+	return retVal;
+}
+
+//-----------------------------------------------------------------------------------------
+// Do Chip Select and then write data to SPI and then waits until the receiving is completed
+//-----------------------------------------------------------------------------------------
+unsigned short SPI1_NegSelectWriteRead(unsigned char aChip, unsigned short aData)
+{
+	// select the chip
+	SPI1_ChipSelect_Single(aChip, 0);
+
+	// wait some delay
+	delay_us(5);
+
+	unsigned short retVal = SPI1_WriteRead(aData);
+
+	// wait some delay
+	delay_us(5);
+
+	// deselect the chip
+	SPI1_ChipSelect_Single(aChip, 1);
+
+	return retVal;
+}
+
+//-----------------------------------------------------------------------------------------
 // Writes data to SPI and then waits until the receiving is completed
 //-----------------------------------------------------------------------------------------
-unsigned short SPI1_WriteRead(unsigned short data)
+unsigned short SPI1_WriteRead(unsigned short aData)
 {
 	// wait until the transmission is done
 	while (SPI1STATbits.SPITBF) {
@@ -125,9 +167,9 @@ unsigned short SPI1_WriteRead(unsigned short data)
 	}
 
 	if (SPI1CONbits.MODE16)          /* word write */
-		SPI1BUF = data;
+		SPI1BUF = aData;
 	else
-		SPI1BUF = data & 0xff;   /*  byte write  */
+		SPI1BUF = aData & 0xff;   /*  byte write  */
 
 	while (!SPI1STATbits.SPIRBF) {
 		ClrWdt();
@@ -137,6 +179,7 @@ unsigned short SPI1_WriteRead(unsigned short data)
 
 	SPI1STATbits.SPIROV = 0;
 
+	// read the value
 	if (SPI1CONbits.MODE16)
 		return (SPI1BUF);           /* return word read */
 
@@ -177,9 +220,9 @@ void initSPI2(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 {
 
 	SPI2STATbits.SPIEN = 0;	// disable SPI
-	_TRISG7 = 1;			// SDI2/RG7 is input
+	_TRISG7 = 1;			// SDI2/RG7 is input RX
 	_TRISG6 = 0;			// SCK2/RG6 is clock output
-	_TRISG8 = 0;			// SDO2/RG8	is output
+	_TRISG8 = 0;			// SDO2/RG8	is output TX
 
 
 	SPI2STATbits.SPIROV = 0;	// clear the overflow buffer flag
@@ -200,24 +243,24 @@ void initSPI2(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 	SPI2CONbits.MODE16 = b16Bit;// enable/disable 16bit mode
 
 	SPI2CONbits.SMP = 0;	// SPI data input sample phase bit (Master mode: SMP=0 input data sampled at middle of data output time,
-					// SMP=1 input data sampled at end of data output time; Slave mode: SMP must be cleared)
+							// SMP=1 input data sampled at end of data output time; Slave mode: SMP must be cleared)
 
 	SPI2CONbits.CKE = CKE;	// SPI clock edge select bit (CKE=0 serial output data changes on transition from IDLE clock state to
-					// active clock state, CKE=1 serial output data changes on transition from active clock state to IDLE clock state)
+							// active clock state, CKE=1 serial output data changes on transition from active clock state to IDLE clock state)
 
 	SPI2CONbits.SSEN = 0;	// Slave select enable bit (SSEN=0 SS2 pin not used by module, SSEN=1 SS2 pin used for slave mode)
 
 	SPI2CONbits.CKP = CKP;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
- 					// CKP=1 IDLE state for clock is a high level, active state is a low level)
+							// CKP=1 IDLE state for clock is a high level, active state is a low level)
 
-	SPI2CONbits.PPRE = 0x00;	// Primary prescale (master mode) bits 64:1
+	SPI2CONbits.PPRE = 0x02;	// Primary prescale (master mode) bits 64:1
 								// 00 - 0 – primary prescale 64:1
 								// 01 - 1	primary prescale 16:1
 								// 10 - 2 – primary prescale 4:1
 								// 11 - 3 – primary prescale 1:1
 
 
-	SPI2CONbits.SPRE = 0x06;	// Secondary prescale (master mode) bits 5:1
+	SPI2CONbits.SPRE = 0x07;	// Secondary prescale (master mode) bits 5:1
 								// 000 – secondary prescale 8:1
 								// 001 – secondary prescale 7:1
 								// ...
@@ -254,9 +297,50 @@ void initSPI2(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 }
 
 //-----------------------------------------------------------------------------------------
+// Do Chip Select and then write data to SPI and then waits until the receiving is completed
+//-----------------------------------------------------------------------------------------
+unsigned short SPI2_SelectWriteRead(unsigned char aChip, unsigned short aData)
+{
+	// select the chip
+	SPI2_ChipSelect_Single(aChip, 1);
+
+	// wait some delay
+	delay_us(5);
+
+	unsigned short retVal = SPI2_WriteRead(aData);
+	delay_us(5);
+
+	// deselect the chip
+	SPI2_ChipSelect_Single(aChip, 0);
+
+	return retVal;
+}
+
+//-----------------------------------------------------------------------------------------
+// Do Chip Select and then write data to SPI and then waits until the receiving is completed
+//-----------------------------------------------------------------------------------------
+unsigned short SPI2_NegSelectWriteRead(unsigned char aChip, unsigned short aData)
+{
+	// select the chip
+	SPI2_ChipSelect_Single(aChip, 0);
+
+	// wait some delay
+	delay_us(5);
+
+	unsigned short retVal = SPI2_WriteRead(aData);
+	delay_us(5);
+
+	// deselect the chip
+	SPI2_ChipSelect_Single(aChip, 1);
+
+	return retVal;
+}
+
+
+//-----------------------------------------------------------------------------------------
 // Writes data to SPI and then waits until the receiving is completed
 //-----------------------------------------------------------------------------------------
-unsigned short SPI2_WriteRead(unsigned short data)
+unsigned short SPI2_WriteRead(unsigned short aData)
 {
 	// wait until the transmission is done
 	while (SPI2STATbits.SPITBF) {
@@ -264,9 +348,9 @@ unsigned short SPI2_WriteRead(unsigned short data)
 	}
 
 	if (SPI2CONbits.MODE16)          /* word write */
-		SPI2BUF = data;
+		SPI2BUF = aData;
 	else
-		SPI2BUF = data & 0xff;   /*  byte write  */
+		SPI2BUF = aData & 0xff;   /*  byte write  */
 
 	while (!SPI2STATbits.SPIRBF) {
 		ClrWdt();
@@ -276,6 +360,7 @@ unsigned short SPI2_WriteRead(unsigned short data)
 
 	SPI2STATbits.SPIROV = 0;
 
+	// return the value
 	if (SPI2CONbits.MODE16)
 		return (SPI2BUF);           /* return word read */
 

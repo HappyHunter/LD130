@@ -9,6 +9,7 @@
 #include "osa.h"
 #include "MCP23S17.h"
 #include "SPI.h"
+#include "common.h"
 
 extern void delay_us(unsigned long aTimeInMicrosec);
 
@@ -31,29 +32,24 @@ extern void delay_us(unsigned long aTimeInMicrosec);
 #define OLATA 0x14
 #define OLATB 0x15
 
-/*
-Here is some simple code to get started with the MCP23S17.
-The MCP23S17 has address pins set as follows:
-A0=0
-A1=0
-A2=0
-Initially when HAEN=0 the control code will be 0x40 for write and 0x41 for read.
-*/
 
-// Function : MCP23S17Init()
-// Notes: Setup CS and RESET pins
-// Reset the MCP23S17
-// Setup SPI module on PIC
 //-----------------------------------------------------------------------------------------
 void MCP23S17Init1()
 {
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
-	initSPI2(0, 0, 0);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
+	initSPI2(0/*8 bit mode*/, 1/*CKE*/, 0/*CKP*/);
 
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1);
+	delay_us(10); //
+
+
+
+
+
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 0); // enable I/O expander
+	delay_us(10); //
 	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 	SPI2_WriteRead(IOCON);
 
@@ -82,33 +78,48 @@ void MCP23S17Init1()
 //	bit 0 Unimplemented: Read as ‘0’.
 	SPI2_WriteRead(0x20); // same bank,SEQOP disabled
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
+	delay_us(10); //
+
+
+
+
+
 
 
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 0); // enable I/O expander
-	SPI2_WriteRead(0x40); // Opcode write mode, address 0x01
+	delay_us(10); //
+	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 //	Controls the direction of the data I/O.
 //	When a bit is set, the corresponding pin becomes an
 //	input. When a bit is clear, the corresponding pin
 //	becomes an output.
-	SPI2_WriteRead(IODIRA); // set port A as outputs
-	SPI2_WriteRead(0x00);
-	SPI2_WriteRead(0x00);
+	SPI2_WriteRead(IODIRA); // configure the IO ports direction
+	SPI2_WriteRead(0xFC);	// ALL are inputs
+	SPI2_WriteRead(0xFE);	// Port B GPB0 is output
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
+	delay_us(10); //
+
+
+
+
+
 
 
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 0); // enable I/O expander
-	SPI2_WriteRead(0x40); // Opcode write mode, address 0x01
-	SPI2_WriteRead(IOPOLA); // set port A as outputs
-//	This register allows the user to configure the polarity on
+	delay_us(10); //
+	SPI2_WriteRead(0x40); 	// Opcode write mode, address 0x00
+	SPI2_WriteRead(IOPOLA); // set the  polarity
+
+	//	This register allows the user to configure the polarity on
 //	the corresponding GPIO port bits.
 //	If a bit is set, the corresponding GPIO register bit will
 //	reflect the inverted value on the pin.
 	SPI2_WriteRead(0x00); // write to port
 	SPI2_WriteRead(0x00); // write to port
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 }
 
 // Function : MCP23S17Init()
@@ -118,12 +129,20 @@ void MCP23S17Init1()
 //-----------------------------------------------------------------------------------------
 void MCP23S17Init2()
 {
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
-	initSPI2(0, 0, 0);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
+	initSPI2(0/*8 bit mode*/, 1/*CKE*/, 0/*CKP*/);
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1);
+	delay_us(10); //
+
+
+
+
+
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 0); // enable I/O expander
+	delay_us(10); //
+
 	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 	SPI2_WriteRead(IOCON);
 
@@ -152,24 +171,35 @@ void MCP23S17Init2()
 //	bit 0 Unimplemented: Read as ‘0’.
 	SPI2_WriteRead(0x20); // same bank,SEQOP disabled
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
+	delay_us(10); //
+
+
+
 
 
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 0); // enable I/O expander
-	SPI2_WriteRead(0x40); // Opcode write mode, address 0x01
+	delay_us(10); //
+	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 //	Controls the direction of the data I/O.
 //	When a bit is set, the corresponding pin becomes an
 //	input. When a bit is clear, the corresponding pin
 //	becomes an output.
-	SPI2_WriteRead(IODIRA); // set port A as outputs
-	SPI2_WriteRead(0x00);
-	SPI2_WriteRead(0x00);
+	SPI2_WriteRead(IODIRA); // configure the IO ports direction
+	SPI2_WriteRead(0xFC);	// ALL are inputs
+	SPI2_WriteRead(0xFE);	// Port B GPB0 is output
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
+	delay_us(10); //
+
+
+
+
 
 
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 0); // enable I/O expander
-	SPI2_WriteRead(0x42); // Opcode write mode, address 0x01
+	delay_us(10); //
+	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 	SPI2_WriteRead(IOPOLA); // set port A as outputs
 //	This register allows the user to configure the polarity on
 //	the corresponding GPIO port bits.
@@ -178,7 +208,7 @@ void MCP23S17Init2()
 	SPI2_WriteRead(0x00); // write to port
 	SPI2_WriteRead(0x00); // write to port
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 }
 
 
@@ -189,18 +219,22 @@ unsigned short MCP23S17ReadHead1()
 	unsigned short retValA = 0;
 	unsigned short retValB = 0;
 
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
 	initSPI2(0, 0, 0);
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 0); // enable I/O expander
+	delay_us(5);
+
 	SPI2_WriteRead(0x41); // Opcode read mode, address 0x00
 	SPI2_WriteRead(GPIOA); // set port A
 	retValA = SPI2_WriteRead(0x00); // read port A
 	retValB = SPI2_WriteRead(0x00); // read port B
+
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 	return ((retValB << 8) | retValA);
 }
+
 
 //-----------------------------------------------------------------------------------------
 void MCP23S17WriteHead1(unsigned short data)
@@ -209,14 +243,18 @@ void MCP23S17WriteHead1(unsigned short data)
 
 	theData = data;	// save the local state, since OS_Bsem_Wait can switch the context
 
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
 	initSPI2(0, 0, 0);
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 0); // enable I/O expander
+	delay_us(5);
+
+	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 	SPI2_WriteRead(OLATA); // set port write A
 	SPI2_WriteRead(data & 0x00FF); // write port A
 	SPI2_WriteRead((data>>8) && 0x00FF); // write port B
+
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 }
 
 
@@ -226,16 +264,20 @@ unsigned short MCP23S17ReadHead2()
 	unsigned short retValA = 0;
 	unsigned short retValB = 0;
 
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
 	initSPI2(0, 0, 0);
 
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 0); // enable I/O expander
+	delay_us(5);
+
 	SPI2_WriteRead(0x41); // Opcode read mode, address 0x00
 	SPI2_WriteRead(GPIOA); // set port A
 	retValA = SPI2_WriteRead(0x00); // read port A
 	retValB = SPI2_WriteRead(0x00); // read port B
-	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+
+	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
+
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 	return ((retValB << 8) | retValA);
 }
 
@@ -246,14 +288,18 @@ void MCP23S17WriteHead2(unsigned short data)
 
 	theData = data;	// save the local state, since OS_Bsem_Wait can switch the context
 
-	OS_Bsem_Wait(SPI_2_Busy_Sema);
+//	OS_Bsem_Wait(SPI_2_Busy_Sema);
 	initSPI2(0, 0, 0);
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 0); // enable I/O expander
+	delay_us(5);
+
+	SPI2_WriteRead(0x40); // Opcode write mode, address 0x00
 	SPI2_WriteRead(OLATA); // set port write A
 	SPI2_WriteRead(data & 0x00FF); // write port A
 	SPI2_WriteRead((data>>8) && 0x00FF); // write port B
-	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
-	OS_Bsem_Set(SPI_2_Busy_Sema);
+
+	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
 }
 
 

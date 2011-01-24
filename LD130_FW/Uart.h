@@ -16,11 +16,13 @@ void outputChar_UART1(char ch);
 void outputString_UART1(const char* pCh);
 void outputIntAsHexString_UART1(unsigned long aValue);
 void outputIntAsString_UART1(unsigned long aValue);
+void outputFloatAsString_UART1(double aValue);
 
 void outputChar_UART2(char ch);
 void outputString_UART2(const char* pCh);
 void outputIntAsHexString_UART2(unsigned long aValue);
 void outputIntAsString_UART2(unsigned long aValue);
+void outputFloatAsString_UART2(double aValue);
 
 
 extern OST_CSEM  Uart1_Msg;

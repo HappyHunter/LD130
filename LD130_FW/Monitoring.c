@@ -32,68 +32,39 @@ static unsigned short theGPIOHead2 = 0;
 
 
 
-/**
- * GPIO 1
- *
- * GPA4 - Fuse H1C4
- * GPA5 - Fuse H1C3
- * GPA6 - Fuse H1C3
- * GPA7 - Fuse H1C1
- *
- * GPB0 - AC-DC Head 1
- * GPB1 - UV_H1_C1
- * GPB2 - UV_H1_C2
- * GPB3 - UV_H1_C4
- * GPB4 - UV_H1_C4
- *
- */
-
-/**
- * GPIO 2
- *
- * GPA4 - Fuse H2C4
- * GPA5 - Fuse H2C3
- * GPA6 - Fuse H2C3
- * GPA7 - Fuse H2C1
- *
- * GPB0 - AC-DC Head 2
- * GPB1 - UV_H2_C1
- * GPB2 - UV_H2_C2
- * GPB3 - UV_H2_C4
- * GPB4 - UV_H2_C4
- *
- */
 
 void Task_Monitoring()
 {
-
 	static short tmp = 0;
-	_LATA9 = 0;
-	delay_us(100); // reset for 10*10K cycles
-	_LATA9 = 1;
+//	static unsigned long tmp1 = 0;
 
-	MCP23S17Init1();
-	MCP23S17Init2();
 
 	theTemperatureH1 = 0;
 	theTemperatureH2 = 0;
 	theTemperatureAmb = 0;
-
 	for (;;) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
-
+		OS_Timer();
 
 		/**
 		 * Read temperature Head 1
 		 */
-		OS_Bsem_Wait(SPI_2_Busy_Sema);
-		initSPI2(1/*16bit*/, 0, 0);
-		SPI2_ChipSelect_Single(SPI_Chip_Select_3, 0); //temp sensor H1
-		tmp = SPI2_WriteRead(0x0000); // just read
+		initSPI2(1/*16bit*/, 0, 1);
+		tmp = SPI2_NegSelectWriteRead(SPI_Chip_Select_3, 0x0000); // just read
 		tmp = tmp >> 3;  // sign dependand shifting
 		theTemperatureH1 = tmp * 0.0625f;
-		OS_Bsem_Set(SPI_2_Busy_Sema);
+
+		#if 1
+		DbgOut("H1={");
+//		DbgOutInt(tmp<<3);
+//		DbgOut("} {");
+//		DbgOutInt(tmp);
+//		DbgOut("} {");
+		DbgOutFloat(theTemperatureH1);
+		DbgOut("}\r\n");
+		OS_Delay(64000);
+		#endif
 
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
@@ -101,13 +72,23 @@ void Task_Monitoring()
 		/**
 		 * Read temperature Head 2
 		 */
-		OS_Bsem_Wait(SPI_2_Busy_Sema);
-		initSPI2(1/*16bit*/, 0, 0);
-		SPI2_ChipSelect_Single(SPI_Chip_Select_4, 0); //temp sensor H2
-		tmp = SPI2_WriteRead(0x0000); // just read
+		initSPI2(1/*16bit*/, 0, 1);
+		tmp = SPI2_NegSelectWriteRead(SPI_Chip_Select_4, 0x0000); // just read
+		// in case if sensor is not connected then the return is FFFF
+		if (tmp == 0xFFFF) tmp = 0;
 		tmp = tmp >> 3;  // sign dependand shifting
 		theTemperatureH2 = tmp * 0.0625f;
-		OS_Bsem_Set(SPI_2_Busy_Sema);
+
+		#if 0
+		DbgOut("H2={");
+		DbgOutInt(tmp<<3);
+		DbgOut("} {");
+		DbgOutInt(tmp);
+		DbgOut("} {");
+		DbgOutFloat(theTemperatureH2);
+		DbgOut("}\r\n");
+		OS_Delay(64000);
+		#endif
 
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
@@ -115,13 +96,21 @@ void Task_Monitoring()
 		/**
 		 * Read temperature Ambiant
 		 */
-		OS_Bsem_Wait(SPI_2_Busy_Sema);
-		initSPI2(1/*16bit*/, 0, 0);
-		SPI2_ChipSelect_Single(SPI_Chip_Select_5, 0); //temp sensor Ambiant
-		tmp = SPI2_WriteRead(0x0000); // just read
+		initSPI2(1/*16bit*/, 0, 1);
+		tmp = SPI2_NegSelectWriteRead(SPI_Chip_Select_5, 0x0000); // just read
 		tmp = tmp >> 3;  // sign dependand shifting
 		theTemperatureAmb = tmp * 0.0625f;
-		OS_Bsem_Set(SPI_2_Busy_Sema);
+
+		#if 0
+		DbgOut("AM={");
+		DbgOutInt(tmp<<3);
+		DbgOut("} {");
+		DbgOutInt(tmp);
+		DbgOut("} {");
+		DbgOutFloat(theTemperatureAmb);
+		DbgOut("}\r\n");
+		OS_Delay(64000);
+		#endif
 
 
 		ClrWdt();
@@ -131,6 +120,12 @@ void Task_Monitoring()
 		 * Read GPIO for head 1
 		 */
 		theGPIOHead1 = MCP23S17ReadHead1(); // just read
+		#if 1
+		DbgOut("theGPIOHead1={");
+		DbgOutInt(theGPIOHead1);
+		DbgOut("}\r\n");
+		OS_Delay(64000);
+		#endif
 
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
@@ -140,8 +135,13 @@ void Task_Monitoring()
 		 * Read GPIO for head 2
 		 */
 		theGPIOHead2 = MCP23S17ReadHead2(); // just read
+		#if 1
+		DbgOut("theGPIOHead2={");
+		DbgOutInt(theGPIOHead2);
+		DbgOut("}\r\n");
+		#endif
 
-
+		OS_Delay(950000UL);
 	}
 }
 

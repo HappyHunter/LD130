@@ -83,6 +83,8 @@ void Task_LCDMan (void)
 	for (theCounter = 0; ;++theCounter) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
+		// increment timer counetr
+		OS_Timer();
 
 		// update the active LCD screen
 		for (i = 0; i < LCD_MAXROWS; ++i) {
@@ -118,6 +120,8 @@ void Task_LCDMan (void)
 			updateScreen3();
 			break;
 		}
+
+		OS_Delay(1000);
 	}
 }
 

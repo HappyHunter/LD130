@@ -11,13 +11,18 @@
 #include "LCDMan.h"
 #include "CmdManager.h"
 #include "Monitoring.h"
+#include "MCP23S17.h"
+#include "SPI.h"
+#include "HardwareController.h"
 
 
 // uses watchdog timer
 #ifdef USE_30_MHZ
-_FOSC(XT_PLL16 & CSW_FSCM_OFF);
+//_FOSC(XT_PLL16 & CSW_FSCM_OFF);
+_FOSC(FRC_PLL16 & CSW_FSCM_OFF);
 #else
-_FOSC(XT_PLL8 & CSW_FSCM_OFF);
+_FOSC(FRC_PLL8 & CSW_FSCM_OFF);
+//_FOSC(XT_PLL8 & CSW_FSCM_OFF);
 #endif
 
 _FWDT(WDT_OFF & WDTPSA_64 & WDTPSB_16);
@@ -27,9 +32,6 @@ _FBORPOR(PBOR_OFF & MCLR_EN);	//	;xxx power-on reset, brown-out reset, master cl
 void Init (void);
 
 void TaskBlink();
-
-#define TEST_TEST_TEST
-
 
 int main (void)
 {
@@ -50,6 +52,12 @@ int main (void)
 
     OS_Init();
 
+
+    //------------------------------------------------------------------------------
+    //  Mark SPI 2 as free
+    //------------------------------------------------------------------------------
+//	OS_Bsem_Set(SPI_2_Busy_Sema);
+
     //------------------------------------------------------------------------------
     //  Create Tasks
     //------------------------------------------------------------------------------
@@ -58,8 +66,8 @@ int main (void)
     OS_Task_Create(2, Task_UART1);
     OS_Task_Create(2, Task_UART2);
     OS_Task_Create(6, Task_Monitoring);
-    OS_Task_Create(7, Task_LCDMan);
-    OS_Task_Create(7, TaskBlink);
+//    OS_Task_Create(6, Task_LCDMan);
+    OS_Task_Create(6, TaskBlink);
 
     //------------------------------------------------------------------------------
     //  Enable interrupts and start OS
@@ -162,6 +170,32 @@ void Init (void)
 {
 	_ADON = 0;			// disable analog module
 	ADPCFG = 0xFFFF;	// all pins are digital input/ouput pins
+#if 0
+	asm("mov     #OSCCONL, w1");	//	Point w1 to OSCCONL byte
+	asm("disi    #7");				// Disable interrupts for the next 7 instructions
+	asm("mov     #0x46, w2");		// Move first OSCCONL unlock code byte
+	asm("mov     #0x57, w3");		// Move second OSCCONL unlock code byte
+									//-------Start special sequence to update the oscillator
+	asm("mov.b   w2, [w1]");		// Perform byte-wide move of w2 to OSCCONL
+	asm("mov.b   w3, [w1]");		// Perform byte-wide move of w2 to OSCCONL
+	asm("mov 	#0x57, W0");
+	asm("bset OSCCONL, #0x00");
+
+
+	PLLFBD = 38;			// M = 40
+	CLKDIVbits.PLLPOST = 0;	// N1 = 2
+	CLKDIVbits.PLLPRE = 0;	// N2 = 2
+	OSCTUN = 0;
+	RCONbits.SWDTEN = 0;
+
+	__builtin_write_OSCCONH(0x07);
+	__builtin_write_OSCCONL   (0x01);
+
+	while(OSCCONbits.COSC != 0x03);
+
+	while(OSCCONbits.LOCK != 0x01);
+#endif
+
 
 	// pins Init section
 	//----------------------------------------
@@ -171,8 +205,8 @@ void Init (void)
 	TRISD = 0;				// use all pins as output
 	TRISE = 0;				// use all pins as output
 	TRISF = 0;				// use all pins as output
-	_TRISF0  = 1;			// Input Switch 1
-	_TRISF1  = 1;			// Input Switch 2
+	_TRISD0  = 1;			// Input Switch 1
+	_TRISD1  = 1;			// Input Switch 2
 
 	_LATB11 = 0;			// voltage control head 1 latched pin data: voltage off
 	_LATB12 = 0;			// voltage control head 2 latched pin data: voltage off
@@ -181,41 +215,84 @@ void Init (void)
 
 	_TRISB6  = 1;			// Main reset input
 	_LATA9 = 0;				// GPIO IO reset Pin
+
+
+	_LATA9 = 0;				// GPIO IO reset Pin, LOW is in reset
+	delay_us(10); 			// reset for 10*10K cycles
+	_LATA9 = 1; 			// GPIO IO reset Pin, HIGH is working
+	delay_us(10); 			//
+
+	MCP23S17Init1();
+	MCP23S17Init2();
+
+
+	/**
+	 * Chip Select Inputs for LTC1329. In 3-wire mode, a logic low
+	 * on this CS pin enables the LTC1329. Upon power-up, a logic
+	 * high at CS puts the chip into pulse mode. If CS ever goes
+	 * low, the chip is configured in 3-wire mode until the next
+	 * power is cycled.
+	 *
+	 * So in our case we want all DACs to be in SPI mode. First
+	 * raise the CS high to switch to SPI mode
+	 */
+	SPI1_ChipSelect_Single(SPI_Chip_Select_1, 0);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_2, 0);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_3, 0);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_4, 0);
+
+	delay_us(10);	// wait
+
+	// now lower down CS for LTC1329 to deselect them
+	SPI1_ChipSelect_Single(SPI_Chip_Select_1, 1);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_2, 1);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_3, 1);
+	SPI1_ChipSelect_Single(SPI_Chip_Select_4, 1);
+
+    //------------------------------------------------------------------------------
+    //  Init hardware bank infos
+    //------------------------------------------------------------------------------
+	InitAllBankInfo();
+
+	// initialize the input capture module for triggers
+	initTrigger1(void);
+	initTrigger2(void);
+
+	resetAllDACs();
 }
 
 
 //-----------------------------------------------------------------------------------------
 //
 // Test task for blinking LEDs to show the activity
+
 void TaskBlink()
 {
 	static unsigned short iPeriod = 0;
-	static unsigned char  iPeriod2 = 0;
+//	static unsigned char  iPeriod2 = 0;
 
-//	_ADON = 0;			// disable analog module
-//	ADPCFG = 0xFFFF;	// all pins are digital input/ouput pins
+#ifndef B_LD130
+	_ADON = 0;			// disable analog module
+	ADPCFG = 0xFFFF;	// all pins are digital input/ouput pins
+#endif
 
-	// pins Init section
-	//----------------------------------------
-//	TRISE = 0;				// use all pins as output
-//	TRISD = 0;				// use all pins as output
-
-	_TRISD4 = 0;
-	_TRISD5 = 0;
-	_LATD5 = 0;
-	_LATD4 = 0;
+	BLINK_LED1_TRIS = 0;
+	BLINK_LED2_TRIS = 0;
+	BLINK_LED1 = 1;
+	BLINK_LED2 = 1;
 
 
 	for (;;) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
-		if (++iPeriod == 0) {
-			_LATD5 = !_LATD5;
-			if (++iPeriod2 > 20) {
-//				_LATD4 = !_LATD4;
-				iPeriod2 = 0;
-//				outputString_UART1("Hello\r\n");
-			}
+		OS_Timer();
+		if (++iPeriod > 30000) {
+			iPeriod = 0;
+			// blink LED to show the activity
+			BLINK_LED2 = !BLINK_LED2;
+//			if (++iPeriod2 > 20) {
+//				iPeriod2 = 0;
+//			}
 		}
 	}
 

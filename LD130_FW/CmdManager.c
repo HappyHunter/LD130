@@ -11,6 +11,7 @@
 #include "Uart.h"
 #include "Parser.h"
 #include "HardwareController.h"
+#include "Monitoring.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -61,6 +62,7 @@ void sendBankData();
 void setSequenceData();
 void setSerialNumber();
 void sendSeqData();
+void sendStatus();
 //-----------------------------------------------------------------------------------------
 
 void InitCmdManager (void)
@@ -69,11 +71,6 @@ void InitCmdManager (void)
     //  Init the components
     //------------------------------------------------------------------------------
 	InitializeParser();
-
-    //------------------------------------------------------------------------------
-    //  Init hardware bank infos
-    //------------------------------------------------------------------------------
-	InitAllBankInfo();
 
 }
 
@@ -95,6 +92,9 @@ void Task_UART1 (void)
 	for (;;)
     {
         OS_Csem_Wait (Uart1_Msg);	// now wait here untill any data arrives to UART
+
+		// increment timer counetr
+		OS_Timer();
 
 		// store the pointers to the beginig and and of the current message
 		// we will be working with the local variables
@@ -179,7 +179,7 @@ void Task_UART1 (void)
 				//"cfgdata,flags,activeBank",
 				outputString_UART1("cfgdata,");
 				outputIntAsString_UART1(getConfigFlags());
-				outputString_UART1(",");
+				outputChar_UART1(',');
 				outputIntAsString_UART1(getActiveBank());
 				outputString_UART1("\r\n");
 
@@ -232,6 +232,10 @@ void Task_UART1 (void)
 				continue;
 			} else
 
+			if (strcmp(GetCmdName(), "getstatus") == 0) {
+				sendStatus();
+				continue;
+			} else
 
 			if (strcmp(GetCmdName(), "setsernum") == 0) {
 				setSerialNumber();
@@ -258,6 +262,9 @@ void Task_UART2 (void)
 	for (;;)
     {
         OS_Csem_Wait (Uart2_Msg);	// now wait here untill any data arrives to UART
+
+		// increment timer counetr
+		OS_Timer();
     }
 
 }
@@ -334,9 +341,9 @@ void setHeadData()
 
 
 
-	pValue = GetValueByName("voltage");			// 0 - 100 Volts
+	pValue = GetValueByName("voltage");			// 0 - 100 %
 	theHeadData.m_voltage = atoi(pValue);
-	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 10000) {
+	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 100) {
 		outputErrorString_UART1(2);
 		return ;
 	}
@@ -431,13 +438,13 @@ void sendHeadStatus(unsigned short anOutputId)
 	// send back the reply
 	outputString_UART1("hstatus,");
 	outputIntAsString_UART1(getActiveBank());
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(getHeadStatus(anOutputId)->m_statusChanel1);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(getHeadStatus(anOutputId)->m_statusChanel2);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(getHeadStatus(anOutputId)->m_statusChanel3);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(getHeadStatus(anOutputId)->m_statusChanel4);
 	outputString_UART1("\r\n");
 }
@@ -445,7 +452,7 @@ void sendHeadStatus(unsigned short anOutputId)
 /**
 * sendHeadData() sends back the data for the output ID specified
 *  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-*  unsigned short	m_voltage;		// 0 - 100 Volts
+*  unsigned short	m_voltage;		// 0 - 100 %
 *  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
 *  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
 *  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
@@ -479,23 +486,23 @@ void sendHeadData()
     //"hdata,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 	outputString_UART1("hdata,");
 	outputIntAsString_UART1(theHeadData.m_voltage);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel1);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel2);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel3);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel4);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_strobeDelay);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_strobeWidth);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_triggerEdge);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_triggerId);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_chanelAmplifier);
 	outputString_UART1("\r\n");
 }
@@ -510,7 +517,7 @@ void sendHeadData()
 *
 *  unsigned short	m_bankId;		// 1, 2, 3, 4
 *  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-*  unsigned short	m_voltage;		// 0 - 100 Volts
+*  unsigned short	m_voltage;		// 0 - 100 %
 *  unsigned short	m_powerChanel1; // 0 - 100 00% with fixed decimal point at 2 digits
 *  unsigned short	m_powerChanel2; // for example the power of 35.23% will be sent as 3523
 *  unsigned short	m_powerChanel3; // the power of 99.00% will be sent as 9900
@@ -553,9 +560,9 @@ void setBankData()
 	theHeadData = getBankInfo(theBankId)->m_output[theOutputId-1];
 
 
-	pValue = GetValueByName("voltage");			// 0 - 100 Volts
+	pValue = GetValueByName("voltage");			// 0 - 100 %
 	theHeadData.m_voltage = atoi(pValue);
-	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 10000) {
+	if (!IsValidInteger(pValue) || theHeadData.m_voltage > 100) {
 		outputErrorString_UART1(2);
 		return ;
 	}
@@ -679,27 +686,27 @@ void sendBankData()
     // "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 	outputString_UART1("bankdata,");
 	outputIntAsString_UART1(theBankId);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theOutputId);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_voltage);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel1);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel2);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel3);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_powerChanel4);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_strobeDelay);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_strobeWidth);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_triggerEdge);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_triggerId);
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	outputIntAsString_UART1(theHeadData.m_chanelAmplifier);
 	outputString_UART1("\r\n");
 }
@@ -835,11 +842,37 @@ void sendSeqData()
 
 	outputString_UART1("seqdatalen,");
 	outputIntAsString_UART1(getCurrentBankSequencePosition());
-	outputString_UART1(",");
+	outputChar_UART1(',');
 	for (i = 0; i < iEnd; ++i) {
 		outputChar_UART1(getBankSequenceAt(i)+'0');
 		if (((i+1)%10) == 0)
-			outputString_UART1(",");
+			outputChar_UART1(',');
 	}
 	outputString_UART1("\r\n");
 }
+
+
+
+
+
+/**
+ * sends back the status of the controller and the temperature
+ *  Message input:
+ *   "getstatus",
+ *
+ * Output:
+ *   "status,TH1,TH2,TAmb",
+ *
+*/
+//------------------------------------------------------------------------------
+void sendStatus()
+{
+	outputString_UART1("status,");
+	outputFloatAsString_UART1(getTemperatureH1());
+	outputChar_UART1(',');
+	outputFloatAsString_UART1(getTemperatureH2());
+	outputChar_UART1(',');
+	outputFloatAsString_UART1(getTemperatureAmb());
+	outputString_UART1("\r\n");
+}
+

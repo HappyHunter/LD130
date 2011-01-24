@@ -12,7 +12,7 @@
 #define NOT_MATCH_INDEX 255
 
 //count of used patterns
-#define PATTERNS_COUNT 29
+#define PATTERNS_COUNT 31
 
 //maximum count of named variables
 #define VALUES_COUNT 49
