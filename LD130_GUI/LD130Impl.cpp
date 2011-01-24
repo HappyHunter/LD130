@@ -71,6 +71,8 @@ void TLD130Impl::readFromController()
 	}
 
 	getBankSequenceImpl();
+
+	getStatus();
 }
 
 //-----------------------------------------------------------------------------------------
@@ -287,8 +289,8 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 
   	char cmdBuf[1024] = {0};
 
-	// "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
-  	_snprintf (cmdBuf, sizeof(cmdBuf) / sizeof(cmdBuf[0]), "bankdata,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+	// "setbankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
+  	_snprintf (cmdBuf, sizeof(cmdBuf) / sizeof(cmdBuf[0]), "setbankdata,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
 		aData.m_bankId,			// 1,2,3,4
 		aData.m_outputId, 		// 1,2
 		aData.m_voltage,		// 0 - 100 Volts
@@ -347,5 +349,25 @@ TCommandErrorOutput TLD130Impl::setSequence(const string& aValue)
 
 	theCmd += '\n';
 	return m_conMan.send(theCmd.c_str());
+}
+
+
+//---------------------------------------------------------------------------
+TLD130Status TLD130Impl::getStatus()
+{
+	TLD130Status retVal;
+  	char cmdBuf[1024] = {0};
+
+	// "gethstatus,headId"
+  	_snprintf (cmdBuf, sizeof(cmdBuf) / sizeof(cmdBuf[0]), "getstatus\n");
+
+    // "status,TH1,TH2,TAmb",
+	TCommandErrorOutput retCode = m_conMan.send(cmdBuf);
+	if (!retCode.hasError()) {
+	    retVal.m_temperatureH1 = atof(TSerialConMan::GetValueByName("TH1"));
+	    retVal.m_temperatureH2 = atof(TSerialConMan::GetValueByName("TH2"));
+	    retVal.m_temperatureAmb = atof(TSerialConMan::GetValueByName("TAmb"));
+	}
+	return retVal;
 }
 

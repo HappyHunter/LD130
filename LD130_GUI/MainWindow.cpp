@@ -173,6 +173,7 @@ void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 	if (bUpdated2) {
 		m_LD130.getHeadStatus(2);
 	}
+//	m_LD130.getStatus();
 }
 //---------------------------------------------------------------------------
 

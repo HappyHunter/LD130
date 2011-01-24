@@ -56,6 +56,8 @@ TSerialConMan::TSerialConMan()
 	m_overlappedIn.Offset = 0;
 	m_overlappedIn.OffsetHigh = 0;
 
+	::InitializeParser();
+
 	m_UartID = 0;
 }
 

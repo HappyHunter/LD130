@@ -78,6 +78,7 @@ public:
     string getSequence() { getBankSequenceImpl(); return m_sequence; }
     TCommandErrorOutput TLD130Impl::setSequence(const string& aValue);
 
+    TLD130Status getStatus();
 private:
 
     void readFromController();

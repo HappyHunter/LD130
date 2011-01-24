@@ -67,7 +67,17 @@ object FormMainWindow: TFormMainWindow
         'COM 17'
         'COM 18'
         'COM 19'
-        'COM 20')
+        'COM 20'
+        'COM 21'
+        'COM 22'
+        'COM 23'
+        'COM 24'
+        'COM 25'
+        'COM 26'
+        'COM 27'
+        'COM 28'
+        'COM 29'
+        'COM 30')
     end
     object RzPanelVersion: TRzPanel
       Left = 224
@@ -242,7 +252,7 @@ object FormMainWindow: TFormMainWindow
               Width = 382
               Height = 48
               Align = alTop
-              Caption = ' Voltage '
+              Caption = ' Voltage in %'
               TabOrder = 0
               object tbVoltageHead1: TRzTrackBar
                 Left = 9
@@ -1578,6 +1588,7 @@ object FormMainWindow: TFormMainWindow
     Left = 536
   end
   object TimerUpdateGUI: TTimer
+    Enabled = False
     OnTimer = TimerUpdateGUITimer
     Left = 440
   end
