@@ -106,7 +106,7 @@ private:
     /**
      * There are several banks that can pre programmed
      */
-    TBankData	m_bankData[GLOBAL_BANK_COUNT];
+    TBankData	m_bankData[MAX_NUM_OF_BANKS];
 
     /**
      * The current output status after programming to see under/over

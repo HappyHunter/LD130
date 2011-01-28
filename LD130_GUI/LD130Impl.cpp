@@ -204,7 +204,7 @@ void TLD130Impl::getBankSequenceImpl()
 //---------------------------------------------------------------------------
 TBankHeadData  TLD130Impl::getBankHeadData(unsigned short aBankId/*1,2,3,4*/, unsigned short aHeadId /*1,2*/) const
 {
-	aBankId 	 = std::min(std::max(aBankId,		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aBankId 	 = std::min(std::max(aBankId,		1), 	MAX_NUM_OF_BANKS);	// 1,2,3,4
 	aHeadId 	 = std::min(std::max(aHeadId, 	1), 	2);                 // 1,2
 
 	return m_bankData[aBankId-1].m_headData[aHeadId-1];
@@ -246,7 +246,7 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(unsigned short aBankId,			//1,2,
 								    unsigned short aChanelAmplifier	 // the amplification value 1-5
 )
 {
-	aBankId 	 = std::min(std::max(aBankId,		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aBankId 	 = std::min(std::max(aBankId,		1), 	MAX_NUM_OF_BANKS);	// 1,2,3,4
 	aHeadId 	 = std::min(std::max(aHeadId, 	1), 	2);                 // 1,2
 
 	TBankHeadData theData;
@@ -271,7 +271,7 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 {
 
 	// update error checking for properties
-	aData.m_bankId 		 = std::min(std::max(aData.m_bankId, 		1), 	GLOBAL_BANK_COUNT);	// 1,2,3,4
+	aData.m_bankId 		 = std::min(std::max(aData.m_bankId, 		1), 	MAX_NUM_OF_BANKS);	// 1,2,3,4
 	aData.m_outputId 	 = std::min(std::max(aData.m_outputId, 		1), 	2);                 // 1,2
 	aData.m_voltage 	 = std::min(std::max(aData.m_voltage, 		0), 	100);               // 0 - 100 Volts
 	aData.m_powerChanel1 = std::min(std::max(aData.m_powerChanel1,	0), 	10000);			    // 0 - 100 00% with fixed decimal point at 2 digits
@@ -312,7 +312,7 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 TCommandErrorOutput TLD130Impl::setActiveBank(unsigned short aBankId)
 {
 	if (aBankId < 1) aBankId = 1;
-	if (aBankId > GLOBAL_BANK_COUNT) aBankId = GLOBAL_BANK_COUNT;
+	if (aBankId > MAX_NUM_OF_BANKS) aBankId = MAX_NUM_OF_BANKS;
 
   	char cmdBuf[1024] = {0};
     //"setbank,bankId",
@@ -336,7 +336,7 @@ TCommandErrorOutput TLD130Impl::setSequence(const string& aValue)
 	for (unsigned int iStr = 0; iStr < aValue.length(); ++iStr) {
 
 		// some validity of data
-		if (aValue[iStr] >= '1' && aValue[iStr] < ('1' + GLOBAL_BANK_COUNT)) {
+		if (aValue[iStr] >= '1' && aValue[iStr] < ('1' + MAX_NUM_OF_BANKS)) {
 			if ((++iIndex % 10) == 0){
 				theCmd += ',';
 			}

@@ -115,6 +115,19 @@ void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 	if (m_headControlInfo.m_updateHead[0]) {
 		m_headControlInfo.m_updateHead[0] = false;
 
+		int triggerMode = TriggerRaising;
+		if (rbRaisingTriggerHead1->Checked) {
+			triggerMode = TriggerRaising;
+		} else if (rbFallingTriggerHead1->Checked) {
+			triggerMode = TriggerFalling;
+		} else if (rzDCModeHead1->Checked) {
+			triggerMode = TriggerDC;
+		}
+
+
+		// limit the amplifier to 1 in DC mode
+		int theAmplifier = triggerMode != TriggerDC ? grHead1Amplifier->ItemIndex + 1 : 1;
+
 		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
 															 bankIndex,
 															 1,								   // 1 - head 1, 2 - Head 2
@@ -125,13 +138,14 @@ void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 															 int(edChanel4Head1->Value*100.f), // the power of 100.00% will be sent as 10000
 															 int(edDelayHead1->IntValue),	   // the delay of outcoming light strobe in microseconds
 															 int(edWidthHead1->IntValue),	   // the duration of outcoming light strobe in microseconds
-															 rbRaisingTriggerHead1->Checked ? 0 : 1, // the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+															 triggerMode, // the edge of incoming trigger to start counting, 0 - raising, 1 - falling
 															 3,	 								// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-															 grHead1Amplifier->ItemIndex + 1 	// the amplification value 1-5
+															 theAmplifier 						// the amplification value 1-5
 															 );
 
 		if (retCode.hasError()) {
 			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
+            lbFullLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
 		}
 		bUpdated1 = true;
 	}
@@ -139,23 +153,38 @@ void __fastcall TFormMainWindow::TimerUpdateTimer(TObject *Sender)
 	bool bUpdated2 = false;
 	if (m_headControlInfo.m_updateHead[1]) {
 		m_headControlInfo.m_updateHead[1] = false;
+
+		int triggerMode = TriggerRaising;
+		if (rbRaisingTriggerHead2->Checked) {
+			triggerMode = TriggerRaising;
+		} else if (rbFallingTriggerHead2->Checked) {
+			triggerMode = TriggerFalling;
+		} else if (rzDCModeHead2->Checked) {
+			triggerMode = TriggerDC;
+		}
+
+
+		// limit the amplifier to 1 in DC mode
+		int theAmplifier = triggerMode != TriggerDC ? grHead2Amplifier->ItemIndex + 1 : 1;
+
 		TCommandErrorOutput retCode = m_LD130.setBankHeadData(
 															 bankIndex,
-															 2,								   // 1 - head 1, 2 - Head 2
-															 int(edVoltageHead2->IntValue),	   // 0 - 100 Volts
-															 int(edChanel1Head2->Value*100.f), // 0 - 100 00% with fixed decimal point at 2 digits
-															 int(edChanel2Head2->Value*100.f), // for example the power of 35.23% will be sent as 3523
-															 int(edChanel3Head2->Value*100.f), // the power of 99.00% will be sent as 9900
-															 int(edChanel4Head2->Value*100.f), // the power of 100.00% will be sent as 10000
-															 int(edDelayHead2->IntValue),	   // the delay of outcoming light strobe in microseconds
-															 int(edWidthHead2->IntValue),	   // the duration of outcoming light strobe in microseconds
-															 rbRaisingTriggerHead2->Checked ? 0 : 1, // the edge of incoming trigger to start counting, 0 - raising, 1 - falling
+															 2,								    // 1 - head 1, 2 - Head 2
+															 int(edVoltageHead2->IntValue),	    // 0 - 100 Volts
+															 int(edChanel1Head2->Value*100.f),  // 0 - 100 00% with fixed decimal point at 2 digits
+															 int(edChanel2Head2->Value*100.f),  // for example the power of 35.23% will be sent as 3523
+															 int(edChanel3Head2->Value*100.f),  // the power of 99.00% will be sent as 9900
+															 int(edChanel4Head2->Value*100.f),  // the power of 100.00% will be sent as 10000
+															 int(edDelayHead2->IntValue),	    // the delay of outcoming light strobe in microseconds
+															 int(edWidthHead2->IntValue),	    // the duration of outcoming light strobe in microseconds
+															 triggerMode, 						// the edge of incoming trigger to start counting, 0 - raising, 1 - falling
 															 3,	 								// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-															 grHead2Amplifier->ItemIndex + 1 	// the amplification value 1-5
+															 theAmplifier					 	// the amplification value 1-5
 															 );
 
 		if (retCode.hasError()) {
 			lbLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
+            lbFullLog->Items->Add(AnsiString((char*)retCode.m_errorDescription));
 		}
 		bUpdated2 = true;
 	}
@@ -248,24 +277,22 @@ void __fastcall TFormMainWindow::cbComPortCloseUp(TObject *Sender)
 void __fastcall TFormMainWindow::rbRaisingTriggerHead1Click(TObject *Sender)
 {
 	m_headControlInfo.m_updateHead[0] = true;
-	if (rzchkEnableBanks->Checked)
-		rbRaisingTriggerHead2->Checked = true;
-
+    grHead1Amplifier->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::rbFallingTriggerHead1Click(TObject *Sender)
 {
-	m_headControlInfo.m_updateHead[1] = true;
-	if (rzchkEnableBanks->Checked)
-		rbFallingTriggerHead2->Checked = true;
+	m_headControlInfo.m_updateHead[0] = true;
+    grHead1Amplifier->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::rzDCModeHead1Click(TObject *Sender)
 {
-	if (rzchkEnableBanks->Checked)
-		rzDCModeHead2->Checked = true;
+    m_headControlInfo.m_updateHead[0] = true;
+    grHead1Amplifier->ItemIndex = 0;
+    grHead1Amplifier->Enabled = false;
 }
 //---------------------------------------------------------------------------
 
@@ -304,12 +331,14 @@ void __fastcall TFormMainWindow::TabSheet1Show(TObject *Sender)
 void __fastcall TFormMainWindow::rbRaisingTriggerHead2Click(TObject *Sender)
 {
 	m_headControlInfo.m_updateHead[1] = true;
+    grHead2Amplifier->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFormMainWindow::rbFallingTriggerHead2Click(TObject *Sender)
 {
 	m_headControlInfo.m_updateHead[1] = true;
+    grHead2Amplifier->Enabled = true;
 }
 //---------------------------------------------------------------------------
 
@@ -338,12 +367,22 @@ void TFormMainWindow::updateControlsForSelectedBank()
 	setNumericEditSafely(edDelayHead1, theHeadData.m_strobeDelay);
 	setNumericEditSafely(edWidthHead1, theHeadData.m_strobeWidth);
 	switch (theHeadData.m_triggerEdge) {
-	case 0:
+	case TriggerRaising:
 		rbRaisingTriggerHead1->Checked = true;
+		rbFallingTriggerHead1->Checked = false;
+		rzDCModeHead1->Checked = false;
 		break;
 
-	case 1:
+	case TriggerFalling:
+		rbRaisingTriggerHead1->Checked = false;
 		rbFallingTriggerHead1->Checked = true;
+		rzDCModeHead1->Checked = false;
+		break;
+
+	case TriggerDC:
+		rbFallingTriggerHead1->Checked = false;
+		rbRaisingTriggerHead1->Checked = false;
+		rzDCModeHead1->Checked = true;
 		break;
 
 	}
@@ -387,13 +426,24 @@ void TFormMainWindow::updateControlsForSelectedBank()
 	setNumericEditSafely(edDelayHead2, theHeadData.m_strobeDelay);
 	setNumericEditSafely(edWidthHead2, theHeadData.m_strobeWidth);
 	switch (theHeadData.m_triggerEdge) {
-	case 0:
+	case TriggerRaising:
 		rbRaisingTriggerHead2->Checked = true;
+		rbFallingTriggerHead2->Checked = false;
+		rzDCModeHead2->Checked = false;
 		break;
 
-	case 1:
+	case TriggerFalling:
+		rbRaisingTriggerHead2->Checked = false;
 		rbFallingTriggerHead2->Checked = true;
+		rzDCModeHead2->Checked = false;
 		break;
+
+	case TriggerDC:
+		rbFallingTriggerHead2->Checked = false;
+		rbRaisingTriggerHead2->Checked = false;
+		rzDCModeHead2->Checked = true;
+		break;
+
 
 	}
 
@@ -627,6 +677,239 @@ void TFormMainWindow::OnLogEvent(const char* pCmd, const char* pLogStr)
 	int idx = FormMainWindow->lbLog->Items->Add(AnsiString(pLogStr));
 	if (idx > 3)
 		FormMainWindow->lbLog->TopIndex = idx - 1;
+
+
+
+
+	while (FormMainWindow->lbFullLog->Items->Count > 1000) {
+		FormMainWindow->lbFullLog->Items->Delete(0);
+	}
+
+	idx = FormMainWindow->lbFullLog->Items->Add(AnsiString(pLogStr));
+//	if (idx > 3)
+//		FormMainWindow->lbFullLog->TopIndex = idx - 1;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::rgTriggerSourceHead1Click(TObject *Sender)
+{
+    m_headControlInfo.m_updateHead[0] = true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::rgTriggerSourceHead1Changing(TObject *Sender, int NewIndex, bool &AllowChange)
+{
+    m_headControlInfo.m_updateHead[0] = true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::rgTriggerSourceHead2Changing(
+      TObject *Sender, int NewIndex, bool &AllowChange)
+{
+    m_headControlInfo.m_updateHead[1] = true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::grHead2AmplifierChanging(TObject *Sender,
+      int NewIndex, bool &AllowChange)
+{
+    m_headControlInfo.m_updateHead[1] = true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::rzDCModeHead2Click(TObject *Sender)
+{
+    m_headControlInfo.m_updateHead[1] = true;
+    grHead2Amplifier->ItemIndex = 0;
+    grHead2Amplifier->Enabled = false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel1Head1Changing(TObject *Sender, int NewPos, bool &AllowChange)
+{
+    if (m_head1PowerChanging)
+        return;
+
+    m_head1PowerChanging = true;
+
+    int diff = NewPos - tbChanel1Head1->Position;
+    if (grHead1Lock->ItemChecked[0] && grHead1Lock->ItemChecked[1]) {
+        tbChanel2Head1->Position = tbChanel2Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[0] && grHead1Lock->ItemChecked[2]) {
+        tbChanel3Head1->Position = tbChanel3Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[0] && grHead1Lock->ItemChecked[3]) {
+        tbChanel4Head1->Position = tbChanel4Head1->Position + diff;
+    }
+
+    m_head1PowerChanging = false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel2Head1Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head1PowerChanging)
+        return;
+
+    m_head1PowerChanging = true;
+
+    int diff = NewPos - tbChanel2Head1->Position;
+    if (grHead1Lock->ItemChecked[1] && grHead1Lock->ItemChecked[0]) {
+        tbChanel1Head1->Position = tbChanel1Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[1] && grHead1Lock->ItemChecked[2]) {
+        tbChanel3Head1->Position = tbChanel3Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[1] && grHead1Lock->ItemChecked[3]) {
+        tbChanel4Head1->Position = tbChanel4Head1->Position + diff;
+    }
+
+    m_head1PowerChanging = false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel3Head1Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head1PowerChanging)
+        return;
+
+    m_head1PowerChanging = true;
+
+    int diff = NewPos - tbChanel3Head1->Position;
+    if (grHead1Lock->ItemChecked[2] && grHead1Lock->ItemChecked[1]) {
+        tbChanel2Head1->Position = tbChanel2Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[2] && grHead1Lock->ItemChecked[0]) {
+        tbChanel1Head1->Position = tbChanel1Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[2] && grHead1Lock->ItemChecked[3]) {
+        tbChanel4Head1->Position = tbChanel4Head1->Position + diff;
+    }
+
+    m_head1PowerChanging = false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel4Head1Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head1PowerChanging)
+        return;
+
+    m_head1PowerChanging = true;
+
+    int diff = NewPos - tbChanel4Head1->Position;
+    if (grHead1Lock->ItemChecked[3] && grHead1Lock->ItemChecked[1]) {
+        tbChanel2Head1->Position = tbChanel2Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[3] && grHead1Lock->ItemChecked[2]) {
+        tbChanel3Head1->Position = tbChanel3Head1->Position + diff;
+    }
+    if (grHead1Lock->ItemChecked[3] && grHead1Lock->ItemChecked[0]) {
+        tbChanel1Head1->Position = tbChanel1Head1->Position + diff;
+    }
+
+    m_head1PowerChanging = false;
+
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel1Head2Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head2PowerChanging)
+        return;
+
+    m_head2PowerChanging = true;
+
+    int diff = NewPos - tbChanel1Head2->Position;
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[1]) {
+        tbChanel2Head2->Position = tbChanel2Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[2]) {
+        tbChanel3Head2->Position = tbChanel3Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[3]) {
+        tbChanel4Head2->Position = tbChanel4Head2->Position + diff;
+    }
+
+    m_head2PowerChanging = false;
+
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel2Head2Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head2PowerChanging)
+        return;
+
+    m_head2PowerChanging = true;
+
+    int diff = NewPos - tbChanel2Head2->Position;
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[0]) {
+        tbChanel1Head2->Position = tbChanel1Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[2]) {
+        tbChanel3Head2->Position = tbChanel3Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[3]) {
+        tbChanel4Head2->Position = tbChanel4Head2->Position + diff;
+    }
+
+    m_head2PowerChanging = false;
+
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel3Head2Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head2PowerChanging)
+        return;
+
+    m_head2PowerChanging = true;
+
+    int diff = NewPos - tbChanel3Head2->Position;
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[1]) {
+        tbChanel2Head2->Position = tbChanel2Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[0]) {
+        tbChanel1Head2->Position = tbChanel1Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[3]) {
+        tbChanel4Head2->Position = tbChanel4Head2->Position + diff;
+    }
+
+    m_head2PowerChanging = false;
+
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFormMainWindow::tbChanel4Head2Changing(TObject *Sender,
+      int NewPos, bool &AllowChange)
+{
+    if (m_head2PowerChanging)
+        return;
+
+    m_head2PowerChanging = true;
+
+    int diff = NewPos - tbChanel4Head2->Position;
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[1]) {
+        tbChanel2Head2->Position = tbChanel2Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[2]) {
+        tbChanel3Head2->Position = tbChanel3Head2->Position + diff;
+    }
+    if (grHead2Lock->ItemChecked[0] && grHead2Lock->ItemChecked[0]) {
+        tbChanel1Head2->Position = tbChanel1Head2->Position + diff;
+    }
+
+    m_head2PowerChanging = false;
+
 }
 //---------------------------------------------------------------------------
 

@@ -247,6 +247,10 @@ __published:	// IDE-managed Components
 	TRzRapidFireButton *btnActivateBank;
 	TAction *actActivateBank;
 	TRzCheckBox *rzchkAutoActivateBank;
+    TRzCheckGroup *grHead1Lock;
+    TRzCheckGroup *grHead2Lock;
+    TRzTabSheet *tabLog;
+    TRzListBox *lbFullLog;
 	void __fastcall TimerUpdateTimer(TObject *Sender);
 	void __fastcall EditChange(TObject *Sender);
 	void __fastcall TrackBarChange(TObject *Sender);
@@ -280,6 +284,30 @@ __published:	// IDE-managed Components
 	void __fastcall actTriggerHead1Update(TObject *Sender);
 	void __fastcall actActivateBankExecute(TObject *Sender);
 	void __fastcall actActivateBankUpdate(TObject *Sender);
+    void __fastcall rgTriggerSourceHead1Click(TObject *Sender);
+    void __fastcall rgTriggerSourceHead1Changing(TObject *Sender,
+          int NewIndex, bool &AllowChange);
+    void __fastcall rgTriggerSourceHead2Changing(TObject *Sender,
+          int NewIndex, bool &AllowChange);
+    void __fastcall grHead2AmplifierChanging(TObject *Sender, int NewIndex,
+          bool &AllowChange);
+    void __fastcall rzDCModeHead2Click(TObject *Sender);
+    void __fastcall tbChanel1Head1Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel2Head1Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel3Head1Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel4Head1Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel1Head2Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel2Head2Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel3Head2Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
+    void __fastcall tbChanel4Head2Changing(TObject *Sender, int NewPos,
+          bool &AllowChange);
 
 
 private:	// User declarations
@@ -301,6 +329,8 @@ private:	// User declarations
 
 	static void OnLogEvent(const char* pCmd, const char* pLogStr);
 
+    bool m_head1PowerChanging;
+    bool m_head2PowerChanging;
 
 public:		// User declarations
 		__fastcall TFormMainWindow(TComponent* Owner);

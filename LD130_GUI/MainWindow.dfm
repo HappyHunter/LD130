@@ -1,6 +1,6 @@
 object FormMainWindow: TFormMainWindow
-  Left = 249
-  Top = 65
+  Left = 292
+  Top = 288
   Width = 800
   Height = 600
   Caption = 'LD130 Control'
@@ -163,12 +163,12 @@ object FormMainWindow: TFormMainWindow
       Top = 0
       Width = 784
       Height = 504
-      ActivePage = TabSheet1
+      ActivePage = tabLog
       Align = alClient
       BoldCurrentTab = True
       UseColoredTabs = True
       ShowCardFrame = False
-      TabIndex = 0
+      TabIndex = 2
       TabOrder = 0
       FixedDimension = 19
       object TabSheet1: TRzTabSheet
@@ -301,6 +301,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel1Head1Changing
                 TabOrder = 0
               end
               object tbChanel2Head1: TRzTrackBar
@@ -317,6 +318,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel2Head1Changing
                 TabOrder = 1
               end
               object tbChanel3Head1: TRzTrackBar
@@ -333,6 +335,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel3Head1Changing
                 TabOrder = 2
               end
               object tbChanel4Head1: TRzTrackBar
@@ -349,6 +352,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel4Head1Changing
                 TabOrder = 3
               end
               object edChanel1Head1: TRzNumericEdit
@@ -408,9 +412,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 8
               end
               object pnlOverCurrentHead1Chanel2: TRzPanel
@@ -418,9 +425,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 9
               end
               object pnlOverCurrentHead1Chanel3: TRzPanel
@@ -428,9 +438,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 10
               end
               object pnlOverCurrentHead1Chanel4: TRzPanel
@@ -438,16 +451,19 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 11
               end
               object grHead1Amplifier: TRzRadioGroup
                 Left = 1
-                Top = 314
+                Top = 352
                 Width = 205
-                Height = 77
+                Height = 39
                 Align = alBottom
                 Caption = 'Amplifier'
                 Columns = 5
@@ -460,6 +476,26 @@ object FormMainWindow: TFormMainWindow
                   '5X')
                 TabOrder = 12
                 OnChanging = grHead1AmplifierChanging
+              end
+              object grHead1Lock: TRzCheckGroup
+                Left = 1
+                Top = 314
+                Width = 205
+                Height = 38
+                Align = alBottom
+                Caption = 'Lock'
+                Columns = 4
+                Items.Strings = (
+                  'Ch1'
+                  'Ch2'
+                  'Ch3'
+                  'Ch4')
+                TabOrder = 13
+                CheckStates = (
+                  0
+                  0
+                  0
+                  0)
               end
             end
             object Panel1: TPanel
@@ -714,7 +750,6 @@ object FormMainWindow: TFormMainWindow
                       Top = 123
                       Width = 17
                       Height = 17
-                      Enabled = False
                       TabOrder = 2
                       OnClick = rzDCModeHead1Click
                     end
@@ -742,6 +777,8 @@ object FormMainWindow: TFormMainWindow
                       'Trigger 1 or 2')
                     SpaceEvenly = True
                     TabOrder = 1
+                    OnChanging = rgTriggerSourceHead1Changing
+                    OnClick = rgTriggerSourceHead1Click
                   end
                 end
               end
@@ -780,7 +817,7 @@ object FormMainWindow: TFormMainWindow
               Width = 387
               Height = 48
               Align = alTop
-              Caption = ' Voltage '
+              Caption = ' Voltage in %'
               TabOrder = 1
               object tbVoltageHead2: TRzTrackBar
                 Left = 9
@@ -829,6 +866,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel1Head2Changing
                 TabOrder = 0
               end
               object tbChanel2Head2: TRzTrackBar
@@ -845,6 +883,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel2Head2Changing
                 TabOrder = 1
               end
               object tbChanel3Head2: TRzTrackBar
@@ -861,6 +900,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel3Head2Changing
                 TabOrder = 2
               end
               object tbChanel4Head2: TRzTrackBar
@@ -877,6 +917,7 @@ object FormMainWindow: TFormMainWindow
                 TrackOffset = 15
                 TrackWidth = 4
                 OnChange = TrackBarChange
+                OnChanging = tbChanel4Head2Changing
                 TabOrder = 3
               end
               object edChanel1Head2: TRzNumericEdit
@@ -936,9 +977,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 8
               end
               object pnlOverCurrentHead2Chanel2: TRzPanel
@@ -946,9 +990,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 9
               end
               object pnlOverCurrentHead2Chanel3: TRzPanel
@@ -956,9 +1003,12 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 10
               end
               object pnlOverCurrentHead2Chanel4: TRzPanel
@@ -966,16 +1016,19 @@ object FormMainWindow: TFormMainWindow
                 Top = 16
                 Width = 33
                 Height = 25
+                Hint = 'Undervoltage status'
                 BorderOuter = fsFlatBold
                 Caption = 'A'
                 Color = clBackground
+                ParentShowHint = False
+                ShowHint = True
                 TabOrder = 11
               end
               object grHead2Amplifier: TRzRadioGroup
                 Left = 1
-                Top = 314
+                Top = 352
                 Width = 205
-                Height = 77
+                Height = 39
                 Align = alBottom
                 BorderColor = clInfoBk
                 Caption = 'Amplifier'
@@ -988,6 +1041,27 @@ object FormMainWindow: TFormMainWindow
                   '4X'
                   '5X')
                 TabOrder = 12
+                OnChanging = grHead2AmplifierChanging
+              end
+              object grHead2Lock: TRzCheckGroup
+                Left = 1
+                Top = 314
+                Width = 205
+                Height = 38
+                Align = alBottom
+                Caption = 'Lock'
+                Columns = 4
+                Items.Strings = (
+                  'Ch1'
+                  'Ch2'
+                  'Ch3'
+                  'Ch4')
+                TabOrder = 13
+                CheckStates = (
+                  0
+                  0
+                  0
+                  0)
               end
             end
             object RzPanel11: TRzPanel
@@ -1226,7 +1300,7 @@ object FormMainWindow: TFormMainWindow
                       Width = 17
                       Height = 17
                       TabOrder = 2
-                      OnClick = rzDCModeHead1Click
+                      OnClick = rzDCModeHead2Click
                     end
                     object RzPanel13: TRzPanel
                       Left = 48
@@ -1252,6 +1326,7 @@ object FormMainWindow: TFormMainWindow
                       'Trigger 1 or 2')
                     SpaceEvenly = True
                     TabOrder = 1
+                    OnChanging = rgTriggerSourceHead2Changing
                   end
                 end
               end
@@ -1326,6 +1401,7 @@ object FormMainWindow: TFormMainWindow
             Height = 41
             Action = actLoadFromEPROM
             Caption = 'Load'
+            Enabled = False
             TabOrder = 0
           end
           object RzBitBtn3: TRzBitBtn
@@ -1335,6 +1411,7 @@ object FormMainWindow: TFormMainWindow
             Height = 41
             Action = actStoreToEPROM
             Caption = 'Store'
+            Enabled = False
             TabOrder = 1
             Glyph.Data = {
               B60D0000424DB60D000000000000360000002800000030000000180000000100
@@ -1455,6 +1532,7 @@ object FormMainWindow: TFormMainWindow
             Width = 81
             Height = 41
             Caption = 'Reset'
+            Enabled = False
             TabOrder = 2
           end
         end
@@ -1536,6 +1614,19 @@ object FormMainWindow: TFormMainWindow
             State = cbUnchecked
             TabOrder = 5
           end
+        end
+      end
+      object tabLog: TRzTabSheet
+        Caption = 'Log'
+        object lbFullLog: TRzListBox
+          Left = 0
+          Top = 0
+          Width = 784
+          Height = 485
+          Align = alClient
+          FrameVisible = True
+          ItemHeight = 13
+          TabOrder = 0
         end
       end
     end
