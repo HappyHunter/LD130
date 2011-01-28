@@ -20,4 +20,5 @@ void Task_LCDMan (void);
 */
 void setLcdText(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, const char* pText);
 void setLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, char aChar);
+char getLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol);
 #endif

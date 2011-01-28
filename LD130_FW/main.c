@@ -66,7 +66,7 @@ int main (void)
     OS_Task_Create(2, Task_UART1);
     OS_Task_Create(2, Task_UART2);
     OS_Task_Create(6, Task_Monitoring);
-//    OS_Task_Create(6, Task_LCDMan);
+    OS_Task_Create(6, Task_LCDMan);
     OS_Task_Create(6, TaskBlink);
 
     //------------------------------------------------------------------------------
@@ -255,11 +255,37 @@ void Init (void)
 	InitAllBankInfo();
 
 	// initialize the input capture module for triggers
-	initTrigger1(void);
-	initTrigger2(void);
+	initTrigger1();
+	initTrigger2();
 
 	resetAllDACs();
+
+
+	// program and start T1 timer
+	// we will use this timer for OS scheduling
+	// and to control long delay triggers
+
+	T1CONbits.TON = 0;		//disable the timer
+	T1CONbits.TCKPS=0x0;	// use prescaler *1:1* 1:8 1:64 1:256
+	T1CONbits.TCS=0;		// use instruction clock
+	TMR1=0;					// reset the counter for timer 1
+	_T1IF = 0;				// reset interrupt flag for timer 1
+	_T1IE = 1;				// enable timer 1 interrupt
+	PR1 = 100;	   			// every 100 cycles
+	T1CONbits.TON = 1;		// start the timer
 }
+
+
+//-----------------------------------------------------------------------------------------
+// Here is our lovely interrupt function that Time 1 period change
+//-----------------------------------------------------------------------------------------
+void _ISR __attribute__ ((auto_psv)) _T1Interrupt (void)
+{
+	// increment timer counetr
+	OS_Timer();
+	_T1IF = 0;				// important to clear this bit
+}
+
 
 
 //-----------------------------------------------------------------------------------------
@@ -285,89 +311,12 @@ void TaskBlink()
 	for (;;) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
-		OS_Timer();
-		if (++iPeriod > 30000) {
+		if (++iPeriod > 1000) {
 			iPeriod = 0;
 			// blink LED to show the activity
 			BLINK_LED2 = !BLINK_LED2;
-//			if (++iPeriod2 > 20) {
-//				iPeriod2 = 0;
-//			}
 		}
 	}
 
 }
 
-
-//;void outputIntAsHexString1(int aPort, unsigned long aValue)
-//;{
-//;//	const char* pCh = 0;
-//;//	char buf[11];
-//;	unsigned char i;
-//;//	buf[10] = 0;
-//;
-//;	while (U2STAbits.UTXBF) {
-//;		ClrWdt();
-//;	}
-//;	U2TXREG = ' ';
-//;
-//;	i = 0xd5;
-//;
-//;
-//;	i = i & 0xF0;
-//;	i >>= 8;
-//;	if (i > 9)
-//;		i = i - 10 + 'A';
-//;	else
-//;		i = i + '0';
-//;
-//;	while (U2STAbits.UTXBF) {
-//;		ClrWdt();
-//;	}
-//;	U2TXREG = i;
-//;
-//;	i = 0xd5;
-//;	i = i & 0x0F;
-//;	if (i > 9)
-//;		i = i - 10 + 'A';
-//;	else
-//;		i = i + '0';
-//;
-//;	while (U2STAbits.UTXBF) {
-//;		ClrWdt();
-//;	}
-//;	U2TXREG = i;
-//;
-//;
-//;	while (U2STAbits.UTXBF) {
-//;		ClrWdt();
-//;	}
-//;	U2TXREG = ':';
-//;
-//;/*
-//;	for (i = 10; i != 0; --i) {
-//;		buf[i-1] = (aValue % 16) + '0';
-//;		if (buf[i-1] > '9') buf[i-1] = buf[i-1] - '9' + 'A' - 1;
-//;		aValue = aValue / 16;
-//;	}
-//;
-//;	// strip the leading zeros
-//;	for (pCh = buf; pCh && *pCh == '0'; ++pCh)
-//;		;
-//;
-//;	// in case if all are zeros, then still output 0
-//;	if (*pCh == 0){
-//;//		buf[0] = '0';	assume that there is '0' already there
-//;		buf[1] = 0;
-//;		pCh = buf;
-//;	}
-//;
-//;	for (; pCh && *pCh; ++pCh) {
-//;		while (U1STAbits.UTXBF) {
-//;			ClrWdt();
-//;		}
-//;		U1TXREG = *pCh;
-//;	}
-//;*/
-//;}
-//;

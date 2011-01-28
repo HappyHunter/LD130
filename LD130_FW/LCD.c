@@ -12,6 +12,7 @@
 #include <p30fxxxx.h>
 #include "osa.h"
 #include "lcd.h"
+#include "common.h"
 
 extern void delay_us(unsigned long aTimeInMicrosec);
 
@@ -123,28 +124,35 @@ void setPinDirection(unsigned char asInput)
 
 void setPins(unsigned char anInput)
 {
-	LCD_TRIS_D0	= (anInput & 0x01) ? 1 : 0;
-	LCD_TRIS_D1	= (anInput & 0x02) ? 1 : 0;
-	LCD_TRIS_D2	= (anInput & 0x04) ? 1 : 0;
-	LCD_TRIS_D3	= (anInput & 0x08) ? 1 : 0;
-	LCD_TRIS_D4	= (anInput & 0x10) ? 1 : 0;
-	LCD_TRIS_D5	= (anInput & 0x20) ? 1 : 0;
-	LCD_TRIS_D6	= (anInput & 0x40) ? 1 : 0;
-	LCD_TRIS_D7	= (anInput & 0x80) ? 1 : 0;
+	LCD_D0	= (anInput & 0x01) ? 1 : 0;
+	LCD_D1	= (anInput & 0x02) ? 1 : 0;
+	LCD_D2	= (anInput & 0x04) ? 1 : 0;
+	LCD_D3	= (anInput & 0x08) ? 1 : 0;
+	LCD_D4	= (anInput & 0x10) ? 1 : 0;
+	LCD_D5	= (anInput & 0x20) ? 1 : 0;
+	LCD_D6	= (anInput & 0x40) ? 1 : 0;
+	LCD_D7	= (anInput & 0x80) ? 1 : 0;
 }
 
 unsigned char  getPins()
 {
 	unsigned char retCode = 0;
-	if (LCD_TRIS_D0) retCode = retCode | 0x01;
-	if (LCD_TRIS_D1) retCode = retCode | 0x02;
-	if (LCD_TRIS_D2) retCode = retCode | 0x04;
-	if (LCD_TRIS_D3) retCode = retCode | 0x08;
-	if (LCD_TRIS_D4) retCode = retCode | 0x10;
-	if (LCD_TRIS_D5) retCode = retCode | 0x20;
-	if (LCD_TRIS_D6) retCode = retCode | 0x40;
-	if (LCD_TRIS_D7) retCode = retCode | 0x80;
+	if (LCD_D0) retCode = retCode | 0x01;
+	if (LCD_D1) retCode = retCode | 0x02;
+	if (LCD_D2) retCode = retCode | 0x04;
+	if (LCD_D3) retCode = retCode | 0x08;
+	if (LCD_D4) retCode = retCode | 0x10;
+	if (LCD_D5) retCode = retCode | 0x20;
+	if (LCD_D6) retCode = retCode | 0x40;
+	if (LCD_D7) retCode = retCode | 0x80;
 	return retCode;
+}
+
+static byte bInitialized = 0;
+
+byte is_lcd_initialized (void)
+{
+	return bInitialized;
 }
 
 #if LCD_4_BIT_MODE
@@ -161,7 +169,7 @@ void lcd_putnybble (byte c)						// Write nybble to port in current RS mode
 #endif
 
 byte lcd_getbyte (void)							// Read byte at cursor (RS=1) or ready status (RS=0)
-	{
+{
 	byte	retval;
 #if LCD_4_BIT_MODE
 	byte	highbits;
@@ -183,38 +191,57 @@ byte lcd_getbyte (void)							// Read byte at cursor (RS=1) or ready status (RS=
 #else
 	setPinDirection(1);						// Set port to all input
 	LCD_RW = 1;							// Tell LCD we want to read
-	delay_us (1);
+	delay_us (3);
 	LCD_E = 1;							// Do the read
-	delay_us (1);
+	delay_us (3);
 	retval = getPins();
 	LCD_E = 0;
 	setPinDirection(0);						// Set port back to outputs
 #endif
 	return (retval);						// Give answer to caller
+}
+
+
+#define MAX_LCD_TIMEOUT 200
+void lcd_putbyte (byte c)						// Write byte to port in current RS mode
+{
+	byte	RS_Status;				// must be static to be preserved between context switches
+	unsigned short i;
+
+	if (bInitialized == 0)
+		return;
+
+	RS_Status = LCD_RS;					// Get old pin state
+	LCD_RS = 0;							// Force into command mode to read state
+
+	// Wait for read state
+	// if LCD is not connected we will loop forever here
+	for (i = 0; (lcd_getbyte () & 0x80) && i < MAX_LCD_TIMEOUT; ++i)
+		;
+
+	// if is not connected
+	// just return
+	if (i >= MAX_LCD_TIMEOUT) {
+		bInitialized = 0;
+		return ;
 	}
 
-void lcd_putbyte (byte c)						// Write byte to port in current RS mode
-	{
-	byte	RS_Status;
-
-	RS_Status = LCD_RS;						// Get old pin state
-	LCD_RS = 0;							// Force into command mode to read state
-	while (lcd_getbyte () & 0x80);					// Wait for read state
 	if (RS_Status)
 		LCD_RS = 1;						// Restore RS to old state
+
 	delay_us (1);
 	LCD_RW = 0;							// Set to write mode
-	delay_us (1);
+	delay_us (3);
 #if LCD_4_BIT_MODE
-	lcd_putnybble (c >> 4);						// Send the character out
+	lcd_putnybble (c >> 4);				// Send the character out
 	lcd_putnybble (c);
 #else
-	setPins(c);						// Send the character out
+	setPins(c);							// Send the character out
 #endif
 	LCD_E = 1;
-	delay_us (1);
+	delay_us (3);
 	LCD_E = 0;
-	}
+}
 
 void lcd_command (byte c)						// Send command to LCD port
 {
@@ -259,15 +286,18 @@ byte lcd_lineof (byte CursorAddress)					// Calculate cursor row from it's addre
 	}
 
 byte lcd_cursorpos (void)						// Return address of cursor position
-	{
+{
 	LCD_RS = 0;
 	return (lcd_getbyte ());					//	Get cursor position
-	}
+}
 
-void lcd_putc (byte c)							// Write character to LCD
-	{
+void lcd_putc (byte aC)							// Write character to LCD
+{
+	static byte c;
+	c = aC;
+
 #if !LCD_ALLOW_USER_CHARS
-	byte	CursAddr;
+	static byte	CursAddr;
 #endif
 #if LCD_ALLOW_USER_CHARS						// Allow user-defined characters - no terminal mode
 		LCD_RS = 1;
@@ -309,14 +339,14 @@ void lcd_putc (byte c)							// Write character to LCD
 
 #if LCD_ENABLE_GETC
 byte lcd_getc (void)							// Read character at cursor
-	{
-	byte	retval;
+{
+	static byte	retval;
 
 	LCD_RS = 1;
 	retval = lcd_getbyte ();
 	LCD_RS = 0;
 	return (retval);
-	}
+}
 #endif
 
 #if LCD_ENABLE_GOTOXY
@@ -465,7 +495,11 @@ void lcd_clear (void)							// Clear LCD screen
 
 void lcd_init (void)							// Reset display from software
 {
-	byte	i;
+	static byte	i;
+
+	// set the flag
+	// if LCD is not connected then the flag will be re-set
+	bInitialized = 1;
 
 	LCD_E = 0;							// Set up control pin I/O
 	LCD_TRIS_E = 0;
@@ -474,10 +508,10 @@ void lcd_init (void)							// Reset display from software
 	LCD_RS = 0;							// Command mode
 	LCD_TRIS_RS = 0;
 
-	setPinDirection(0);				// Set data bus to output
+	setPinDirection(0);					// Set data bus to output
 
 	LCD_E = 0;							// Start talking to LCD
-	delay_us (15000);							// Wait a little while
+	delay_us (15000);					// Wait a little while
 
 #if LCD_4_BIT_MODE							// Set LCD into 4-bit mode
 	lcd_putnybble (0b0011);						// Select 8-bit mode

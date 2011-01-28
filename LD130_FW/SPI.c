@@ -55,7 +55,7 @@ void initSPI1(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 	SPI1CONbits.CKP = CKP;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
 							// CKP=1 IDLE state for clock is a high level, active state is a low level)
 
-	SPI1CONbits.PPRE = 0x02;	// Primary prescale (master mode) bits 64:1
+	SPI1CONbits.PPRE = 0x01;	// Primary prescale (master mode) bits 64:1
 								// 00 - 0 – primary prescale 64:1
 								// 01 - 1	primary prescale 16:1
 								// 10 - 2 – primary prescale 4:1
@@ -253,7 +253,7 @@ void initSPI2(unsigned char b16Bit, unsigned char CKE, unsigned char CKP)
 	SPI2CONbits.CKP = CKP;	// Clock polarity select bit (CKP=0 IDLE state for clock is a low level, active state is a high level,
 							// CKP=1 IDLE state for clock is a high level, active state is a low level)
 
-	SPI2CONbits.PPRE = 0x02;	// Primary prescale (master mode) bits 64:1
+	SPI2CONbits.PPRE = 0x01;	// Primary prescale (master mode) bits 64:1
 								// 00 - 0 – primary prescale 64:1
 								// 01 - 1	primary prescale 16:1
 								// 10 - 2 – primary prescale 4:1

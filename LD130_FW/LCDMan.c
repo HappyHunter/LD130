@@ -13,6 +13,7 @@
 #include "HardwareController.h"
 #include "Monitoring.h"
 #include "Common.h"
+#include <stdio.h>
 
 #define NUM_OF_SCREENS 3
 
@@ -47,9 +48,9 @@ static char TheScreens[NUM_OF_SCREENS][LCD_MAXROWS][LCD_MAXCOLS];
 *    B:4.NB:4...Ver:1.2.3
 */
 
-void updateScreen1();
-void updateScreen2();
-void updateScreen3();
+void updateScreen1(unsigned short aCounter);
+void updateScreen2(unsigned short aCounter);
+void updateScreen3(unsigned short aCounter);
 
 
 //-----------------------------------------------------------------------------------------
@@ -65,26 +66,57 @@ void Task_LCDMan (void)
 //	memset(TheScreensChanged, 0, sizeof(TheScreensChanged));
 
 	// wait some time before initializing the LCD to stabilize the power
-	while (++theCounter < 30000) {
+	DbgOut("Task_LCDMan\r\n");
+	while (++theCounter < 300) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
 	}
 
 	setLcdText(0, 1, 0, "Boreal Inc.");
-	setLcdText(0, 4, 9, "Boreal Inc.");
-	setLcdText(1, 1, 0, "Boreal Inc.");
-	setLcdText(1, 4, 9, "Boreal Inc.");
-	setLcdText(2, 1, 0, "Boreal Inc.");
-	setLcdText(2, 4, 9, "Boreal Inc.");
+	setLcdText(0, 1, 0, "LD130 starting");
+
+	#if NUM_OF_SCREENS >= 1
+	setLcdText(0, 4, LCD_MAXCOLS-1, "1");
+	#endif
+
+	#if NUM_OF_SCREENS >= 2
+	setLcdText(1, 4, LCD_MAXCOLS-1, "2");
+	#endif
+
+	#if NUM_OF_SCREENS >= 3
+	setLcdText(2, 4, LCD_MAXCOLS-1, "3");
+	#endif
+
+	#if NUM_OF_SCREENS >= 4
+	setLcdText(3, 4, LCD_MAXCOLS-1, "4");
+	#endif
+
 
 	// initialize the LCD controller
 	lcd_init();
 
+
+	setLcdText(0, 0, 16, " RTI");
+	setLcdText(1, 0, 16, " RTI");
+
+	// update the active LCD screen
+	for (i = 0; i < LCD_MAXROWS; ++i) {
+		lcd_gotoxy (i+1, 1);				// Position cursor
+		for (j = 0; j < LCD_MAXCOLS; ++j) {
+			lcd_putc (TheScreens[0][i][j]);	//	Show and bump
+		}
+	}
+
+	while (++theCounter < 300) {
+		ClrWdt();
+		OS_Yield(); // Unconditional context switching
+		OS_Delay(10000);
+	}
+
 	for (theCounter = 0; ;++theCounter) {
 		ClrWdt();
 		OS_Yield(); // Unconditional context switching
-		// increment timer counetr
-		OS_Timer();
+		OS_Delay(50);
 
 		// update the active LCD screen
 		for (i = 0; i < LCD_MAXROWS; ++i) {
@@ -99,29 +131,35 @@ void Task_LCDMan (void)
 		}
 
 		// switch the active screen
-		if (++theCounter > 10000) {
+		if (theCounter > 200) {
 			theCounter = 0;
-			if (++activeScreen >= NUM_OF_SCREENS)
+
+			if (++activeScreen >= NUM_OF_SCREENS){
 				activeScreen = 0;
+			}
+
+			// in case if LCD was disconnected
+			// and then connected back we need to reinitialize it
+			if (!is_lcd_initialized()) {
+				lcd_init();
+			}
 
 		}
 
 
-		switch (++theScreenToUpdate % NUM_OF_SCREENS) {
+		switch (theScreenToUpdate++ % NUM_OF_SCREENS) {
 		case 0:
-			updateScreen1();
+			updateScreen1(theCounter>>4);
 			break;
 
 		case 1:
-			updateScreen2();
+			updateScreen2(theCounter>>4);
 			break;
 
 		case 2:
-			updateScreen3();
+			updateScreen3(theCounter>>4);
 			break;
 		}
-
-		OS_Delay(1000);
 	}
 }
 
@@ -162,13 +200,25 @@ void setLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol
 
 	// now set the line
 	TheScreens[aScreenId][aLine][aCol] = aChar;
-
 }
+
+//-----------------------------------------------------------------------------------------
+char getLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol)
+{
+	// validate the params
+	if (aScreenId >= NUM_OF_SCREENS) aScreenId = NUM_OF_SCREENS-1;
+	if (aLine >= LCD_MAXROWS) aLine = LCD_MAXROWS-1;
+	if (aCol >= LCD_MAXCOLS) aCol = LCD_MAXCOLS-1;
+
+	// now set the line
+	return TheScreens[aScreenId][aLine][aCol];
+}
+
 
 //-----------------------------------------------------------------------------------------
 const char* getIntAsString(char* buf, unsigned long aValue)
 {
-	const char* pCh = 0;
+	char* pCh = 0;
 	buf[11] = 0;
 
 	buf[10] = (aValue % 10) + '0';
@@ -209,17 +259,26 @@ const char* getIntAsString(char* buf, unsigned long aValue)
 		;
 
 	// in case if all are zeros, then still output 0
-	if (*pCh == 0){
-//		buf[0] = '0';	assume that there is '0' already there
+	if (*pCh == 0) {
+		buf[0] = '0';
 		buf[1] = 0;
 		pCh = buf;
 	}
 	return pCh;
 }
 
+//-----------------------------------------------------------------------------------------
+int getTemperatureAsString(char* buf, size_t size, double aValue)
+{
+	if (size) {
+		buf[size-1] = 0;
+		return snprintf(buf, size, "%03.1f", aValue);
+	}
+	return 0;
+}
 
 //-----------------------------------------------------------------------------------------
-void updateScreen1()
+void updateScreen1(unsigned short aCounter)
 {
 	unsigned short theActiveBank;
 	char buf[12];
@@ -239,7 +298,7 @@ void updateScreen1()
 	setLcdText(0, 0, 9, " O:1 B");
 	getIntAsString(buf, theActiveBank);
 	setLcdChar(0, 0, 15, buf[10]);
-	setLcdText(0, 0, 16, " RTI");
+	setLcdChar(0, 0, 19, (aCounter & 0x01) ? 0xA5 : 0x2E);
 
 	// set line 2
 	setLcdText(0, 1, 0, "2:P");
@@ -250,9 +309,9 @@ void updateScreen1()
 	setLcdChar(0, 1, 5, buf[8]);
 	setLcdChar(0, 1, 4, buf[7]);
 	setLcdChar(0, 1, 3, buf[6]);
-	setLcdText(0, 1, 9, " D");
+	setLcdText(0, 1, 9, " D ");
 	getIntAsString(buf, getBankInfo(theActiveBank)->m_output[0].m_strobeDelay);
-	setLcdText(0, 0, 11, &buf[8]);
+	setLcdText(0, 1, 11, &buf[2]);
 
 	// set line 3
 	setLcdText(0, 2, 0, "3:P");
@@ -263,9 +322,9 @@ void updateScreen1()
 	setLcdChar(0, 2, 5, buf[8]);
 	setLcdChar(0, 2, 4, buf[7]);
 	setLcdChar(0, 2, 3, buf[6]);
-	setLcdText(0, 2, 9, " W");
+	setLcdText(0, 2, 9, " W ");
 	getIntAsString(buf, getBankInfo(theActiveBank)->m_output[0].m_strobeWidth);
-	setLcdText(0, 2, 11, &buf[8]);
+	setLcdText(0, 2, 11, &buf[2]);
 
 
 	// set line 4
@@ -279,12 +338,12 @@ void updateScreen1()
 	setLcdChar(0, 3, 3, buf[6]);
 	setLcdText(0, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter1());
-	setLcdText(0, 3, 11, &buf[8]);
+	setLcdText(0, 3, 11, buf);
 }
 
 
 //-----------------------------------------------------------------------------------------
-void updateScreen2()
+void updateScreen2(unsigned short aCounter)
 {
 	unsigned short theActiveBank;
 	char buf[12];
@@ -304,7 +363,7 @@ void updateScreen2()
 	setLcdText(1, 0, 9, " O:2 B");
 	getIntAsString(buf, theActiveBank);
 	setLcdChar(1, 0, 15, buf[10]);
-	setLcdText(1, 0, 16, " RTI");
+	setLcdChar(1, 0, 19, (aCounter & 0x01) ? 0xA5 : 0x2E);
 
 	// set line 2
 	setLcdText(1, 1, 0, "2:P");
@@ -315,9 +374,9 @@ void updateScreen2()
 	setLcdChar(1, 1, 5, buf[8]);
 	setLcdChar(1, 1, 4, buf[7]);
 	setLcdChar(1, 1, 3, buf[6]);
-	setLcdText(1, 1, 9, " D");
+	setLcdText(1, 1, 9, " D ");
 	getIntAsString(buf, getBankInfo(theActiveBank)->m_output[1].m_strobeDelay);
-	setLcdText(1, 1, 11, &buf[8]);
+	setLcdText(1, 1, 11, &buf[2]);
 
 	// set line 3
 	setLcdText(1, 2, 0, "3:P");
@@ -328,9 +387,9 @@ void updateScreen2()
 	setLcdChar(1, 2, 5, buf[8]);
 	setLcdChar(1, 2, 4, buf[7]);
 	setLcdChar(1, 2, 3, buf[6]);
-	setLcdText(1, 2, 9, " W");
+	setLcdText(1, 2, 9, " W ");
 	getIntAsString(buf, getBankInfo(theActiveBank)->m_output[1].m_strobeWidth);
-	setLcdText(1, 2, 11, &buf[8]);
+	setLcdText(1, 2, 11, &buf[2]);
 
 
 	// set line 4
@@ -344,29 +403,26 @@ void updateScreen2()
 	setLcdChar(1, 3, 3, buf[6]);
 	setLcdText(1, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter2());
-	setLcdText(1, 3, 11, &buf[8]);
+	setLcdText(1, 3, 11, buf);
 }
 
 //-----------------------------------------------------------------------------------------
-void updateScreen3()
+void updateScreen3(unsigned short aCounter)
 {
 	char buf[12];
 	setLcdText(2, 0, 0, "Boreal Inc.");
 
+	setLcdText(2, 0, 13, "tA:");
+	getTemperatureAsString(buf, sizeof(buf) / sizeof(buf[0]), getTemperatureAmb());
+	setLcdText(2, 0, 16, buf);
+
 	setLcdText(2, 1, 0, "t1:");
-	getIntAsString(buf, getTemperatureH1());
-	setLcdChar(2, 2, 3, buf[10]);
-	setLcdChar(2, 2, 4, '.');
-	setLcdChar(2, 2, 5, buf[9]);
-	setLcdChar(2, 2, 6, buf[8]);
-	setLcdChar(2, 2, 7, buf[7]);
-	setLcdText(2, 1, 11, "t2:");
-	getIntAsString(buf, getTemperatureH2());
-	setLcdChar(2, 2, 14, buf[10]);
-	setLcdChar(2, 2, 15, '.');
-	setLcdChar(2, 2, 16, buf[9]);
-	setLcdChar(2, 2, 17, buf[8]);
-	setLcdChar(2, 2, 18, buf[7]);
+	getTemperatureAsString(buf, sizeof(buf) / sizeof(buf[0]), getTemperatureH1());
+	setLcdText(2, 1, 3, buf);
+
+	setLcdText(2, 1, 13, "t2:");
+	getTemperatureAsString(buf, sizeof(buf) / sizeof(buf[0]), getTemperatureH2());
+	setLcdText(2, 1, 16, buf);
 
 	setLcdText(2, 2, 0, "NO ERROR");
 

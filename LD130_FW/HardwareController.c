@@ -151,6 +151,12 @@ static unsigned long getTimeInTicksPre(unsigned long aTimeInMicrosec, unsigned l
 #define	OUTB_TIME_START 	OC3R
 #define	OUTB_TIME_STOP 		OC3RS
 
+
+/**
+ * When 0 then it is AC or trigger mode, when 1 it is DC mode
+ */
+#define AC_DC_H1			_LATF0
+#define AC_DC_H2			_LATF1
 /**
  * stops execution by the delay specified
  * since it involves division operation which takes 18 cycles be
@@ -203,8 +209,8 @@ void InitAllBankInfo()
 	for (i = 1; i <= MAX_NUM_OF_BANKS; ++i) {
 		theBankInfo[i - 1].m_id = i;
 		for (j = 1; j <= MAX_NUM_OF_HEADS; ++j) {
-			initOutputHeadData(&(theBankInfo[i - 1].m_output[j]), j, i);
-			theBankInfo[i - 1].m_strobeTimerPrescaler[j] = 0xffff; //To be computed later from strobeDelay and strobeWidth
+			initOutputHeadData(&(theBankInfo[i - 1].m_output[j-1]), j, i);
+			theBankInfo[i - 1].m_strobeTimerPrescaler[j-1] = 0xffff; //To be computed later from strobeDelay and strobeWidth
 		}
 	}
 
@@ -354,7 +360,7 @@ void programBank(TBankInfo* pBankInfo)
 	// at the end of the period the timer interrupt will fire
 	// in that interrupt we will reenable OC module
 //		PR2 = OUTA_TIME_STOP > OUTB_TIME_STOP ? OUTA_TIME_STOP : OUTB_TIME_STOP;
-	PR2 = OUTA_TIME_STOP
+	PR2 = OUTA_TIME_STOP;
 	PR3 = OUTB_TIME_STOP;
 
 	// make the timer 2 period little bit longer
@@ -369,17 +375,11 @@ void programBank(TBankInfo* pBankInfo)
 	// so check if we need to trigger it on TriggerID1
 	Trig1_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerId & TriggerID1) && pBankInfo->m_output[0].m_strobeWidth != 0;
 	Trig1_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
-	if (pBankInfo->m_output[0].m_triggerEdge == TriggerDC) {
-		// set DC mode for head 1
-	}
 
 	// output head 2 always attached to timer 3
 	// so check if we need to trigger it on TriggerID1
 	Trig1_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerId & TriggerID1) && pBankInfo->m_output[1].m_strobeWidth != 0;
 	Trig1_Timer3_Edge    = pBankInfo->m_output[1].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
-	if (pBankInfo->m_output[1].m_triggerEdge == TriggerDC) {
-		// set DC mode for head 2
-	}
 
 
 	// output head 1 is always attached to timer 2
@@ -465,20 +465,25 @@ void programOutputHead(TBankInfo* pInfo, unsigned char anOutputId)
 
 	DbgOut("Init pulse module\r\n");
 
-//	if (anOutput == 0)
-//		setPulseInfoOutput1(pInfo, anOutput);
-//	else
-//		setPulseInfoOutput2(pInfo, anOutput);
 
-	DbgOut("Init AC/DC mode\r\n");
-//	if (anOutput == 0)
-//		_LATF0 = pInfo->m_output[anOutput].m_triggerEdge != 2;	// 0 - DC mode is on , 1 - DCMode is off
-//	else
-//		_LATF0 = pInfo->m_output[anOutput].m_triggerEdge != 2;	// 0 - DC mode is on , 1 - DCMode is off
-//		_LATF1 = pInfo->m_output[anOutput].m_triggerEdge != 2;  // 0 - DC mode is on , 1 - DCMode is off
+	//
+	// in case if we are using AC mode
+	// then we must switch to AC before we program DACs
+	// since the DAC current can be very high for AC mode
+	//
+	if (pInfo->m_output[anOutputId-1].m_triggerEdge != TriggerDC){
+		if (anOutputId == 1)
+			AC_DC_H1 = 0; // 1 - DC mode is on , 0 - DCMode is off
+		else
+			AC_DC_H2 = 0; // 1 - DC mode is on , 0 - DCMode is off
+	}
 
-//	_LATF0 = 1;
-//	_LATF1 = 1;
+
+	if (anOutputId == 1){
+		setPulseInfoOutput1(pInfo);
+	} else{
+		setPulseInfoOutput2(pInfo);
+	}
 
 	DbgOut("Init head power V{");
 	DbgOutInt(pInfo->m_output[anOutputId-1].m_voltage);
@@ -498,14 +503,25 @@ void programOutputHead(TBankInfo* pInfo, unsigned char anOutputId)
 						pInfo->m_output[anOutputId-1].m_powerChanel3 == 0 &&
 						pInfo->m_output[anOutputId-1].m_powerChanel4 == 0;
 
-	setCurrentDACValue(anOutputId-1, 1, pInfo->m_output[anOutputId-1].m_powerChanel1, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
-	setCurrentDACValue(anOutputId-1, 2, pInfo->m_output[anOutputId-1].m_powerChanel2, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
-	setCurrentDACValue(anOutputId-1, 3, pInfo->m_output[anOutputId-1].m_powerChanel3, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
-	setCurrentDACValue(anOutputId-1, 4, pInfo->m_output[anOutputId-1].m_powerChanel4, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
+	setCurrentDACValue(anOutputId, 1, pInfo->m_output[anOutputId-1].m_powerChanel1, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
+	setCurrentDACValue(anOutputId, 2, pInfo->m_output[anOutputId-1].m_powerChanel2, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
+	setCurrentDACValue(anOutputId, 3, pInfo->m_output[anOutputId-1].m_powerChanel3, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
+	setCurrentDACValue(anOutputId, 4, pInfo->m_output[anOutputId-1].m_powerChanel4, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
 
 	// in case if all the current values are set to 0 set voltage to 0 as well
-	setVoltageDACValue(anOutputId-1, noChannelPower ? 0 : pInfo->m_output[anOutputId-1].m_voltage);
+	setVoltageDACValue(anOutputId, noChannelPower ? 0 : pInfo->m_output[anOutputId-1].m_voltage);
 
+	//
+	// in case if we are using DC mode
+	// then we must switch to DC after we program DACs
+	// since the DAC current must be low for DC mode
+	//
+	if (pInfo->m_output[anOutputId-1].m_triggerEdge == TriggerDC){
+		if (anOutputId == 1)
+			AC_DC_H1 = 1; // 1 - DC mode is on , 0 - DCMode is off
+		else
+			AC_DC_H2 = 1; // 1 - DC mode is on , 0 - DCMode is off
+	}
 
 	if (pInfo->m_output[anOutputId-1].m_powerChanel1 > 5000)
 		theHeadStatus[anOutputId-1].m_statusChanel1 = 1;
@@ -813,6 +829,9 @@ void setPulseInfoOutput1(TBankInfo* pInfo)
 	static unsigned char old_Trig1_IN_Enabled;
 	static unsigned char old_Trig2_IN_Enabled;
 
+	if (pInfo->m_output[0].m_triggerEdge == TriggerDC)
+		return;
+
 	//temporarily ignore input triggers
 	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
 	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
@@ -937,6 +956,9 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 	static unsigned char old_Trig1_IN_Enabled;
 	static unsigned char old_Trig2_IN_Enabled;
 
+	if (pInfo->m_output[1].m_triggerEdge == TriggerDC)
+		return;
+
 	//temporarily ignore input triggers
 	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
 	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
@@ -1000,9 +1022,9 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 	}
 
 	T3CONbits.TCS=0;		// use instruction clock
-	TMR3=0;					// reset the counter for timer 2
-	_T3IF = 0;				// reset interrupt flag for timer 2
-	_T3IE = 1;				// enable timer 2 interrupt
+	TMR3=0;					// reset the counter for timer 3
+	_T3IF = 0;				// reset interrupt flag for timer 3
+	_T3IE = 1;				// enable timer 3 interrupt
 
 	// pulse time START
 	OUTB_TIME_START =  getTimeInTicksPre(pInfo->m_output[1].m_strobeDelay, pInfo->m_strobeTimerPrescaler[1]);

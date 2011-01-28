@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include "LCDMan.h"
 
 
 const char * const ErrorStr __attribute__ ((space(auto_psv))) = "ERR,";
@@ -93,15 +94,16 @@ void Task_UART1 (void)
     {
         OS_Csem_Wait (Uart1_Msg);	// now wait here untill any data arrives to UART
 
-		// increment timer counetr
-		OS_Timer();
-
 		// store the pointers to the beginig and and of the current message
 		// we will be working with the local variables
 		// the idea is to copy the end of the message to the local variable and
 		// then work with it, while
 		// there can be another message arriving to the UART
 		msgCmdEnd = Uart1.m_RXTail;
+
+		// update LCD screen that we have recieved a command
+		setLcdChar(0, 0, 18, getLcdChar(0, 0, 18) == 'T' ? 't' : 'T');
+		setLcdChar(1, 0, 18, getLcdChar(0, 0, 18) == 'T' ? 't' : 'T');
 
 		// clear the pointer to the beginning of a buffer
 		iPos = 0;
@@ -262,9 +264,6 @@ void Task_UART2 (void)
 	for (;;)
     {
         OS_Csem_Wait (Uart2_Msg);	// now wait here untill any data arrives to UART
-
-		// increment timer counetr
-		OS_Timer();
     }
 
 }

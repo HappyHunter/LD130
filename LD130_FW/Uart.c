@@ -10,6 +10,7 @@
 #include "common.h"
 #include "Uart.h"
 #include <stdio.h>
+#include "LCDMan.h"
 
 unsigned short Baud_Rate(unsigned long A_BAUD_) { return ((unsigned short)(A_FOSC_/(16UL * A_BAUD_) -1)); }
 
@@ -170,6 +171,10 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 				// read the character from FIFO
 				Uart1.m_RXBuffer[Uart1.m_RXTail] = ch;
+
+				// update LCD screen that we have recieved a charcter
+				setLcdChar(0, 0, 17, getLcdChar(0, 0, 17) == 'R' ? 'r' : 'R');
+				setLcdChar(1, 0, 17, getLcdChar(0, 0, 17) == 'R' ? 'r' : 'R');
 
 				// echo test back
 				#ifdef B_UART1_ECHO_ON

@@ -39,7 +39,7 @@ typedef unsigned char 		byte;		/* Unsigned 8-bit */
 #define	LCD_MODE_4x40		(FALSE)		// UNSUPPORTED!		// HDM40416H, HDM40416L-4, HDM40416H-5
 
 #define	LCD_CURSOR_BLINK	(FALSE)					// Blink/Noblink cursor mode
-#define	LCD_CURSOR_ON		(TRUE)					// Cursor visible
+#define	LCD_CURSOR_ON		(FALSE)					// Cursor visible
 #define	LCD_CURSOR_INCREMENT	(TRUE)					// Set left-to-right cursor movement
 #define	LCD_CURSOR_SHIFT	(FALSE)					// Shift display on entry
 
@@ -230,6 +230,8 @@ void lcd_clear (void);							// Clear LCD screen
 #if LCD_ALLOW_USER_CHARS
 void lcd_define_char (byte c, const byte *bitmap);			// Define user-defined char
 #endif
+
+byte is_lcd_initialized (void);
 
 #endif
 
