@@ -133,6 +133,8 @@ void Start_UART1 (void)
 	BLINK_LED1 = 0;
 	BLINK_LED1_TRIS = 0;
 
+	IPC2bits.U1TXIP = 0x05;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
+	IPC2bits.U1RXIP = 0x05;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
 
 	_U1RXIF = 0;				// clear interrupt flag
 	_U1TXIE = 0;             	// global enable/disable TX interrupt
@@ -188,7 +190,7 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 				if (ch == '\n' || ch == '\r')
 				{
 					// signal the processing task that the message is ready
-					OS_Csem_Signal_I(Uart1_Msg);
+					OS_Csem_Signal(Uart1_Msg);
 				}
 
 				// increment the tail
@@ -201,6 +203,11 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 		} while(U1STAbits.URXDA);
 	}
+
+	U1STAbits.OERR = 0;
+	U1STAbits.FERR = 0;
+	U1STAbits.PERR = 0;
+
 	_U1RXIF = 0;
 }
 
@@ -365,6 +372,9 @@ void Start_UART2 (void)
 	Uart2.m_UartID = 2;        	// the ID is 2
 	Uart2.m_baud_rate = Uart2_Baud_Rate;
 
+	IPC6bits.U2TXIP = 0x05;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
+	IPC6bits.U2RXIP = 0x05;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
+
 	_U2RXIF = 0;				// clear interrupt flag
 	_U2TXIE = 0;             	// global enable/disable TX interrupt
 	_U2RXIE = 1;             	// gloabl enable/disable RX interrupt
@@ -407,7 +417,7 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 				if (ch == '\n' || ch == '\r')
 				{
 					// signal the processing task that the message is ready
-					OS_Csem_Signal_I(Uart2_Msg);
+					OS_Csem_Signal(Uart2_Msg);
 				}
 
 				// increment the tail

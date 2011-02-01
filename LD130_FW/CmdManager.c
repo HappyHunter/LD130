@@ -25,20 +25,20 @@ const char * const EndlStr __attribute__ ((space(auto_psv))) = "\r\n";
 //Command Patterns
 const char * const ErrorStrings[][2] __attribute__ ((space(auto_psv))) =
 {
-/*0000*/ {"", ""													 },
-/*0001*/ {"00000001","outputId,Must be between 1 and 2" 			 },
-/*0002*/ {"00000002","voltage,Must be between 0 and 10000 Volts" 	 },
-/*0003*/ {"00000003","powerChanel1,Must be between 0 and 10000\%" 	 },
-/*0004*/ {"00000004","powerChanel2,Must be between 0 and 10000\%" 	 },
-/*0005*/ {"00000005","powerChanel3,Must be between 0 and 10000\%" 	 },
-/*0006*/ {"00000006","powerChanel4,Must be between 0 and 10000\%" 	 },
-/*0007*/ {"00000007","triggerEdge,Must be 0,1 or 2" 				 },
-/*0008*/ {"00000008","triggerId,Must be 1,2 or 3" 					 },
-/*0009*/ {"00000009","chanelAmplifier,Must be between 1 and 2" 		 },
-/*0010*/ {"00000010","strobeDelay,is not valid integer" 			 },
-/*0011*/ {"00000011","strobeWidth,is not valid integer" 			 },
-/*0012*/ {"00000012","bankId,Must be between 1 and 4" 				 },
-/*0013*/ {"00000013","Invalid magic number" 						 },
+/*0000*/ {"", ""													 							},
+/*0001*/ {"00000001","outputId,Must be between 1 and 2" 			 							},
+/*0002*/ {"00000002","voltage,Must be between 0 and 10000 Volts" 	 							},
+/*0003*/ {"00000003","powerChanel1,Must be between 0 and 10000\%" 	 							},
+/*0004*/ {"00000004","powerChanel2,Must be between 0 and 10000\%" 	 							},
+/*0005*/ {"00000005","powerChanel3,Must be between 0 and 10000\%" 	 							},
+/*0006*/ {"00000006","powerChanel4,Must be between 0 and 10000\%" 	 							},
+/*0007*/ {"00000007","triggerEdge,Must be 0,1 or 2" 				 							},
+/*0008*/ {"00000008","triggerId,Must be 1,2 or 3" 					 							},
+/*0009*/ {"00000009","chanelAmplifier,Must be between 1 and 2" 		 							},
+/*0010*/ {"00000010","strobeDelay,is not valid integer. Must be between 0 and 2,147,483,647" 	},
+/*0011*/ {"00000011","strobeWidth,is not valid integer. Must be between 0 and 2,147,483,647" 	},
+/*0012*/ {"00000012","bankId,Must be between 1 and 4" 				 							},
+/*0013*/ {"00000013","Invalid magic number" 						 							},
 };
 
 void outputErrorString_UART1(unsigned short anErrIdx)
@@ -195,6 +195,7 @@ void Task_UART1 (void)
 					continue;
 				}
 				fireSoftTrigger(atoi(pTmpValue));
+				outputString_UART1("OK\r\n");
 				continue;
 			} else
 
@@ -377,14 +378,14 @@ void setHeadData()
 
 	pValue = GetValueByName("strobeDelay");		// the delay of outcoming light strobe in microseconds
 	theHeadData.m_strobeDelay = atoi(pValue);
-	if (!IsValidInteger(pValue)) {
+	if (!IsValidInteger(pValue) || theHeadData.m_strobeDelay > 0x7FFFFFFF) {
 		outputErrorString_UART1(10);
 		return ;
 	}
 
 	pValue = GetValueByName("strobeWidth");		// the duration of outcoming light strobe in microseconds
 	theHeadData.m_strobeWidth = atoi(pValue);
-	if (!IsValidInteger(pValue)) {
+	if (!IsValidInteger(pValue) || theHeadData.m_strobeWidth > 0x7FFFFFFF) {
 		outputErrorString_UART1(11);
 		return ;
 	}
@@ -405,11 +406,15 @@ void setHeadData()
 
 	pValue = GetValueByName("chanelAmplifier");	// the amplification value 1-5
 	theHeadData.m_chanelAmplifier = atoi(pValue);
-	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 3) {
+	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 5) {
 		outputErrorString_UART1(9);
 		return ;
 	}
 
+	// limit the amplifier to 1 in DC mode, so we do not blow the light
+	if (theHeadData.m_triggerEdge == TriggerDC) {
+		theHeadData.m_chanelAmplifier = 1;
+	}
 
 	// OK, the verification is completed copy the data back to main variable
 	getBankInfo(1)->m_output[theOutputId-1] = theHeadData;
@@ -596,14 +601,14 @@ void setBankData()
 
 	pValue = GetValueByName("strobeDelay");		// the delay of outcoming light strobe in microseconds
 	theHeadData.m_strobeDelay = atoi(pValue);
-	if (!IsValidInteger(pValue)) {
+	if (!IsValidInteger(pValue) || theHeadData.m_strobeDelay > 0x7FFFFFFF) {
 		outputErrorString_UART1(10);
 		return ;
 	}
 
 	pValue = GetValueByName("strobeWidth");		// the duration of outcoming light strobe in microseconds
 	theHeadData.m_strobeWidth = atoi(pValue);
-	if (!IsValidInteger(pValue)) {
+	if (!IsValidInteger(pValue) || theHeadData.m_strobeWidth > 0x7FFFFFFF) {
 		outputErrorString_UART1(11);
 		return ;
 	}
@@ -624,11 +629,15 @@ void setBankData()
 
 	pValue = GetValueByName("chanelAmplifier");	// the amplification value 1-5
 	theHeadData.m_chanelAmplifier = atoi(pValue);
-	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 3) {
+	if (!IsValidInteger(pValue) || theHeadData.m_chanelAmplifier > 5) {
 		outputErrorString_UART1(9);
 		return ;
 	}
 
+	// limit the amplifier to 1 in DC mode, so we do not blow the light
+	if (theHeadData.m_triggerEdge == TriggerDC) {
+		theHeadData.m_chanelAmplifier = 1;
+	}
 
 	// OK, the verification is completed copy the data back to main variable
 	getBankInfo(theBankId)->m_output[theOutputId-1] = theHeadData;

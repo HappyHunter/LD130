@@ -21,4 +21,11 @@ void Task_LCDMan (void);
 void setLcdText(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, const char* pText);
 void setLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, char aChar);
 char getLcdChar(unsigned char aScreenId, unsigned char aLine, unsigned char aCol);
+
+
+/**
+ * Sets the text on LCD screen and updates it immediately
+*/
+void setLcdTextUpdate(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, const char* pText);
+
 #endif

@@ -42,8 +42,6 @@ unsigned short makeCurrentDACValue_LTC1660(unsigned long aPower, unsigned long a
 	if (anAmplifierValue == 0)
 		anAmplifierValue = 1;
 
-	anAmplifierValue = 1;
-
 	retValue *= aPower;
 
 	retValue = (retValue / 5) * anAmplifierValue;

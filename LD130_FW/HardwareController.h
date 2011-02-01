@@ -17,6 +17,42 @@
 //-----------------------------------------------------------------------------------------
 
 /**
+ *
+ * There are several options for triggering.
+ *
+ * First the simplest and commonly used when the delay+width is
+ * smaller that max timer count of 65535 (with 40Mhz it is 1.638
+ * msec).In this case we will use timer 2,3 with the instruction
+ * counter as a clock source.
+ *
+ * Second option is when delay+width is greater than 65535 AND
+ * width is smaller than 65535. In this case we will use timer 1
+ * resolution of 100x clock to start the PWM pulse
+ *
+ * Third option is when delay+width is greater than 65535 AND
+ * delay is smaller than 65535. In this mode we will use Timer
+ * 2,3 to count the delay and use Timer 1 to count the duration
+ *
+ * Fourth option when delay is less than 65535 and width is less than 65535
+ * but together they are larger than 65535. In this case we use T2/T3
+ * for delay and then use PWM for width
+ *
+ * Last option is when both delay and width is greater than
+ * 65535. In this case we use Timer 1 as an event
+ */
+typedef enum tag_TTimerFlags
+{
+	tfPWMOnly			= 0x01,	// simpliest just use PWM
+	tfDelayAsT1			= 0x02,	// delay use T1
+	tfWidthAsT1			= 0x04,	// width use T1, delay will use either T1 or T2/T3
+	tfDelayAsT2T3		= 0x08,	// delay use T2/T3
+	tfWidthAsPWM		= 0x10,	// width use PWM module, delay will use either T1 or T2/T3
+	tfDelayAsT1ON		= 0x20,	// delay use T1 and is active
+	tfWidthAsT1ON		= 0x40,	// width use T1 and is active
+	tfTriggerON			= 0x80,	// flag is set when trigger is detected and we still did not finish the delay and width
+} TTimerFlags;
+
+/**
 * The bank can have the individual settings for each output head. There are 2 output Heads
 *
 * We can have up to 4 banks of settings, and user can select which bank to use at given moment
@@ -25,9 +61,8 @@ typedef struct tag_TBankInfo
 {
 	unsigned short			m_id;			// the id of the bank
 	TBankHeadData 			m_output[MAX_NUM_OF_HEADS];
-	volatile unsigned short	m_strobeTimerPrescaler[MAX_NUM_OF_HEADS];	// prescaler 1:1 1:8 1:64 1:256
-
-	unsigned char	m_reserved[16];	// reserved for future use
+//	unsigned char			m_flags[MAX_NUM_OF_HEADS];		// flags from TTimerFlags
+	unsigned char			m_reserved[16];	// reserved for future use
 } TBankInfo;
 
 
@@ -160,14 +195,21 @@ void resetAllDACs(void);
 void initTrigger1(void);
 void initTrigger2(void);
 
+/**
+ * The function is called for every tick of Timer 1
+ *
+ * This will be used to trigger the light on long duration
+ * pulses
+*/
+//void processTimer1(void);
 
-void programBank(TBankInfo* pBankInfo);
-
+//void programBank(TBankInfo* pBankInfo);
 
 void initTrigger1Loopback(void);
 
 
 void processNextSequence(void);
+
 
 //short setCurrentDACValue(unsigned char aHead, unsigned char aChanel, unsigned long aValue, unsigned long anAmplifierValue);
 //short setVoltageDACValue(unsigned char aHead, unsigned long aValue);

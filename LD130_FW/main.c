@@ -74,8 +74,20 @@ int main (void)
     //------------------------------------------------------------------------------
 
     OS_EI();
-    OS_Run();
+	for(;;) {
 
+		// check if the safe boot switch is ON
+		// if it is then reboot the microcontroller
+		if (_RE7){
+			setLcdTextUpdate(0, 0, 0, "         Boreal Inc.");
+			setLcdTextUpdate(0, 1, 0, "Safe boot mode      ");
+			setLcdTextUpdate(0, 2, 0, "Waiting for new     ");
+			setLcdTextUpdate(0, 3, 0, "firmware upload     ");
+			return 1;
+		}
+
+		OS_Sched();
+	}
 	return 0;
 }
 
@@ -207,6 +219,8 @@ void Init (void)
 	TRISF = 0;				// use all pins as output
 	_TRISD0  = 1;			// Input Switch 1
 	_TRISD1  = 1;			// Input Switch 2
+							//
+	_TRISE7  = 1;			// Safe boot switch input, if it is set to 1 then reboot
 
 	_LATB11 = 0;			// voltage control head 1 latched pin data: voltage off
 	_LATB12 = 0;			// voltage control head 2 latched pin data: voltage off
@@ -261,6 +275,8 @@ void Init (void)
 	resetAllDACs();
 
 
+	INTCON1bits.NSTDIS = 0;		// enable nested interrupts
+
 	// program and start T1 timer
 	// we will use this timer for OS scheduling
 	// and to control long delay triggers
@@ -268,16 +284,35 @@ void Init (void)
 	T1CONbits.TON = 0;		//disable the timer
 	T1CONbits.TCKPS=0x0;	// use prescaler *1:1* 1:8 1:64 1:256
 	T1CONbits.TCS=0;		// use instruction clock
+	IPC0bits.T1IP = 0x04;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
 	TMR1=0;					// reset the counter for timer 1
 	_T1IF = 0;				// reset interrupt flag for timer 1
 	_T1IE = 1;				// enable timer 1 interrupt
-	PR1 = 100;	   			// every 100 cycles
-	T1CONbits.TON = 1;		// start the timer
+	PR1 = TIMER1_PERIOD;	// every 1000 cycles
+	T1CONbits.TON = 0;		// start the timer
+
+
+	// program and start T1 timer
+	// we will use this timer for OS scheduling
+	// and to control long delay triggers
+
+	T4CONbits.TON = 0;		//disable the timer
+	T4CONbits.TCKPS=0x0;	// use prescaler *1:1* 1:8 1:64 1:256
+	T4CONbits.TCS=0;		// use instruction clock
+	IPC5bits.T4IP = 0x07;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
+	TMR4=0;					// reset the counter for timer 1
+	_T4IF = 0;				// reset interrupt flag for timer 1
+	_T4IE = 1;				// enable timer 1 interrupt
+	PR4 = TIMER1_PERIOD;	// every 1000 cycles
+	T4CONbits.TON = 1;		// start the timer
+
+
+
 }
 
 
 //-----------------------------------------------------------------------------------------
-// Here is our lovely interrupt function that Time 1 period change
+// Here is our lovely interrupt function that Timer 1 period change
 //-----------------------------------------------------------------------------------------
 void _ISR __attribute__ ((auto_psv)) _T1Interrupt (void)
 {
@@ -288,6 +323,8 @@ void _ISR __attribute__ ((auto_psv)) _T1Interrupt (void)
 
 
 
+
+
 //-----------------------------------------------------------------------------------------
 //
 // Test task for blinking LEDs to show the activity
@@ -295,7 +332,6 @@ void _ISR __attribute__ ((auto_psv)) _T1Interrupt (void)
 void TaskBlink()
 {
 	static unsigned short iPeriod = 0;
-//	static unsigned char  iPeriod2 = 0;
 
 #ifndef B_LD130
 	_ADON = 0;			// disable analog module

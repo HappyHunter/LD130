@@ -13,6 +13,12 @@
 #include "Uart.h"
 #include "LTC_DAC.h"
 
+
+
+// devine this one to print into COM2 the debug info about the parameters for
+// the triggrt timing
+#define TRIG_TIMING_DEBUG_OUT
+
 //-----------------------------------------------------------------------------------------
 // Currently we can have up to 4 banks of parameters.
 //
@@ -57,23 +63,38 @@ static unsigned long TheFlashFlags;
 static unsigned long theTriggerCounter1 = 0;
 static unsigned long theTriggerCounter2 = 0;
 
+
 /**
-Trigger pins:
-	Trigger 1:	RD5/67/CN14 Input  _LATD3/OC4/63 - output
-	Trigger 2:	RD6/68/CN15	Input  _LATD2/OC3/62 - output
+ * In case as described by TTimerFlags we do not use PWM module
+ * these are the timer counters that we must respect for
+ * triggering
+ *
+ * For every timer tick we will decrement the counters and when
+ * they rich 0 we will do the light triggering
+ */
+typedef struct tag_TDelayInfo
+{
+	unsigned long			m_delayTimer;	// in case if we are not using PWM module
+	unsigned long			m_widthTimer;	// these 2 fileds will have delay time in Timer1 ticks
+	unsigned char			m_flags;		// one of the flags from TTimerFlags
+} TDelayInfo;
 
-There are two options for triggering. First the simplest and commonly used when
-both output heads are using the same trigger input and the same trigger edge and
-the delay+width are smaller that max timer count of 65535 (with 40Mhz it is 1.638 msec)
-In this case we will assign output 1 and output 2 to use the same timer source, timer 2.
+// the initial calculated delay info
+// when we program the current scanner head we
+//will put the calculated values here
+static TDelayInfo	TheDelayInfo[MAX_NUM_OF_HEADS];
 
-So when we receive the trigger either 1 or 2 as specified in the parameters, we will just
-enable timer 2 only.
+// the working copy of delay info
+// this info modified in interrupts
+// and at the end of the cycle it is copied from TheDelayInfo
+static TDelayInfo	TheDelayInfoWorking[MAX_NUM_OF_HEADS];
 
-In more complicated cases timer 2 is assigned to the output 1
-and timer 3 is assigned to output 2. So if both outputs are set to be triggered by trig 1
-the interrupt will first start timer 2 and then timer 3. So there will be slight delay.
-*/
+
+/**
+ * Trigger pins:
+ * 	Trigger 1:	RD5/67/CN14 Input  _LATD3/OC4/63 - output
+ * 	Trigger 2:	RD6/68/CN15	Input  _LATD2/OC3/62 - output
+ */
 
 
 void setPulseInfoOutput1(TBankInfo* pInfo);
@@ -210,7 +231,6 @@ void InitAllBankInfo()
 		theBankInfo[i - 1].m_id = i;
 		for (j = 1; j <= MAX_NUM_OF_HEADS; ++j) {
 			initOutputHeadData(&(theBankInfo[i - 1].m_output[j-1]), j, i);
-			theBankInfo[i - 1].m_strobeTimerPrescaler[j-1] = 0xffff; //To be computed later from strobeDelay and strobeWidth
 		}
 	}
 
@@ -219,6 +239,24 @@ void InitAllBankInfo()
 		theHeadStatus[i-1].m_statusChanel2 = 0;
 		theHeadStatus[i-1].m_statusChanel3 = 0;
 		theHeadStatus[i-1].m_statusChanel4 = 0;
+
+		theHeadStatus[i-1].m_trigCountChanel1.m_low = theHeadStatus[i-1].m_trigCountChanel1.m_hi = 0;	// life time trigger count
+		theHeadStatus[i-1].m_trigCountChanel2.m_low = theHeadStatus[i-1].m_trigCountChanel2.m_hi = 0;	// life time trigger count
+		theHeadStatus[i-1].m_trigCountChanel3.m_low = theHeadStatus[i-1].m_trigCountChanel3.m_hi = 0;	// life time trigger count
+		theHeadStatus[i-1].m_trigCountChanel4.m_low = theHeadStatus[i-1].m_trigCountChanel4.m_hi = 0;	// life time trigger count
+
+		theHeadStatus[i-1].m_onTimeChanel1.m_low = theHeadStatus[i-1].m_onTimeChanel1.m_hi = 0;	// ON time for the light
+		theHeadStatus[i-1].m_onTimeChanel2.m_low = theHeadStatus[i-1].m_onTimeChanel2.m_hi = 0;	// ON time for the light
+		theHeadStatus[i-1].m_onTimeChanel3.m_low = theHeadStatus[i-1].m_onTimeChanel3.m_hi = 0;	// ON time for the light
+		theHeadStatus[i-1].m_onTimeChanel4.m_low = theHeadStatus[i-1].m_onTimeChanel4.m_hi = 0;	// ON time for the light
+
+		TheDelayInfo[j-1].m_delayTimer  = 0;
+		TheDelayInfo[j-1].m_widthTimer  = 0;
+		TheDelayInfo[j-1].m_flags	  	= 0;
+
+		TheDelayInfoWorking[j-1].m_delayTimer  = 0;
+		TheDelayInfoWorking[j-1].m_widthTimer  = 0;
+		TheDelayInfoWorking[j-1].m_flags	   = 0;
 	}
 }
 
@@ -235,7 +273,7 @@ void initTrigger1()
 	_CNIF  = 0;				// clear CN notification flag again
 	_CN14PUE = 1;			// enable pullup for this pin (optional step only if external pullup is not present)
 							//
-	IPC3bits.CNIP = 0x02;	// assign the priority level 2. 0 is the highest
+	IPC3bits.CNIP = 0x01;	// assign the priority level 1.1 is high, 7 is low, 0 disabled
 	Trig1_IN_Last = TRIG_INA_CPLD;// read the current status of input
 	_CNIE = 1;				// global enable interrupts on pin change
 
@@ -269,7 +307,7 @@ void initTrigger2()
 	_CN15IE = 1;			// enable interrupt on the pin status change
 	_CNIF  = 0;				// clear CN notification flag
 	_CN15PUE = 1;			// enable pullup for this pin (optional step only if external pullup is not present)
-	IPC3bits.CNIP = 0x02;	// assign the priority level 2. 0 is the highest
+	IPC3bits.CNIP = 0x01;	// assign the priority level 1.1 is high, 7 is low, 0 disabled
 	Trig2_IN_Last = TRIG_INB_CPLD;// read the current status of input
 	_CNIE = 1;				// global enable interrupts on pin change
 
@@ -307,7 +345,8 @@ void programBank(TBankInfo* pBankInfo)
 
 	// wait until the trigger timers OFF
 	period = 0;
-	while (T2CONbits.TON || T3CONbits.TON || TRIG_OUTA_PIC || TRIG_OUTB_PIC) {
+	while (T2CONbits.TON || T3CONbits.TON || TRIG_OUTA_PIC || TRIG_OUTB_PIC || (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) != 0 || (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) != 0) {
+
 		ClrWdt();
 		if ((++period % 30) == 0) {
 			if (T2CONbits.TON)
@@ -318,6 +357,11 @@ void programBank(TBankInfo* pBankInfo)
 				DbgOut("TRIG_OUTA_PIC=ON\r\n");
 			if (TRIG_OUTB_PIC)
 				DbgOut("TRIG_OUTB_PIC=ON\r\n");
+			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON))
+				DbgOut("TheDelayInfoWorking[HEAD1_IDX].m_flags=tfTriggerON\r\n");
+			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON))
+				DbgOut("TheDelayInfoWorking[HEAD2_IDX].m_flags=tfTriggerON\r\n");
+
 		}
 	}
 
@@ -373,26 +417,27 @@ void programBank(TBankInfo* pBankInfo)
 
 	// output head 1 is always attached to timer 2
 	// so check if we need to trigger it on TriggerID1
-	Trig1_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerId & TriggerID1) && pBankInfo->m_output[0].m_strobeWidth != 0;
-	Trig1_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	Trig1_Timer2_Enabled = (pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID1) && pBankInfo->m_output[HEAD1_IDX].m_strobeWidth != 0;
+	Trig1_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
 
 	// output head 2 always attached to timer 3
 	// so check if we need to trigger it on TriggerID1
-	Trig1_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerId & TriggerID1) && pBankInfo->m_output[1].m_strobeWidth != 0;
-	Trig1_Timer3_Edge    = pBankInfo->m_output[1].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	Trig1_Timer3_Enabled = (pBankInfo->m_output[HEAD2_IDX].m_triggerId & TriggerID1) && pBankInfo->m_output[HEAD2_IDX].m_strobeWidth != 0;
+	Trig1_Timer3_Edge    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
 
 
 	// output head 1 is always attached to timer 2
 	// so check if we need to trigger it on TriggerID2 this time
-	Trig2_Timer2_Enabled = (pBankInfo->m_output[0].m_triggerId & TriggerID2) && pBankInfo->m_output[0].m_strobeWidth != 0;
-	Trig2_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	Trig2_Timer2_Enabled = (pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID2) && pBankInfo->m_output[HEAD1_IDX].m_strobeWidth != 0;
+	Trig2_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
 
 	// output head 2 is always attached to timer 3
 	// so check if we need to trigger it on TriggerID2 this time
-	Trig2_Timer3_Enabled = (pBankInfo->m_output[1].m_triggerId & TriggerID2) && pBankInfo->m_output[1].m_strobeWidth != 0;
-	Trig2_Timer3_Edge    = pBankInfo->m_output[1].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	Trig2_Timer3_Enabled = (pBankInfo->m_output[HEAD2_IDX].m_triggerId & TriggerID2) && pBankInfo->m_output[HEAD2_IDX].m_strobeWidth != 0;
+	Trig2_Timer3_Edge    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
 
 
+	#if 0
 	// so if we need to trigger head 1, then enable interrupt
 	if (Trig1_Timer2_Enabled || Trig2_Timer2_Enabled) {
 		_T2IF = 0;				// reset interrupt flag for timer 2
@@ -405,11 +450,10 @@ void programBank(TBankInfo* pBankInfo)
 		_T3IE = 1;				// enable timer 3 interrupt
 	}
 
-	#if 0
 	// Check whether we have to use trigger input 1
 	// since both heads use the same trigger IDs we just check head0
-	if ((pBankInfo->m_output[0].m_triggerId & TriggerID1) != 0) {
-		Trig1_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
+	if ((pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID1) != 0) {
+		Trig1_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 		Trig1_Timer2_Enabled = 1;
 	}
 	else {
@@ -417,8 +461,8 @@ void programBank(TBankInfo* pBankInfo)
 	}
 
 	// Check whether we have to use trigger input 2
-	if ((pBankInfo->m_output[0].m_triggerId & TriggerID2) != 0) {
-		Trig2_Timer2_Edge    = pBankInfo->m_output[0].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
+	if ((pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID2) != 0) {
+		Trig2_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == 0 ? 1 : 0;		// the status of the pin when we should fire the timer
 		Trig2_Timer2_Enabled = 1;
 	}
 	else {
@@ -428,6 +472,11 @@ void programBank(TBankInfo* pBankInfo)
 
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
+
+	DbgOut("Trig1_IN_Enabled = ");
+	DbgOutInt(Trig1_IN_Enabled);
+	DbgOut("Trig2_IN_Enabled = ");
+	DbgOutInt(Trig2_IN_Enabled);
 
 	DbgOut("programBank=done\r\n");
 }
@@ -554,6 +603,11 @@ void programOutputHead(TBankInfo* pInfo, unsigned char anOutputId)
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
 
+	DbgOut("Trig1_IN_Enabled = ");
+	DbgOutInt(Trig1_IN_Enabled);
+	DbgOut("Trig2_IN_Enabled = ");
+	DbgOutInt(Trig2_IN_Enabled);
+
 	DbgOut("Program output head done\r\n");
 }
 
@@ -572,102 +626,6 @@ void resetAllDACs()
 }
 
 
-//-----------------------------------------------------------------------------------------
-// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-
-void fireSoftTrigger(unsigned char aTriggerId)
-{
-	unsigned char RD5_Old;
-	unsigned char RD6_Old;
-
-	RD5_Old = TRIG_INA_CPLD;
-	RD6_Old = _RD6;
-
-//	outputString(&Uart1, "ST \r\n");
-//
-//	outputString(&Uart1, " Trig2_IN = ");
-//	outputIntAsString(&Uart1, Trig2_IN);
-//
-//	outputString(&Uart1, " LATD6 = ");
-//	outputIntAsString(&Uart1, LATD6);
-//
-//	outputString(&Uart1, "\r\n");
-
-	if (aTriggerId & 0x01) {
-		if (Trig1_Timer2_Enabled && T2CONbits.TON == 0) {
-			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
-			asm("nop");
-			asm("nop");
-			asm("nop");
-    		TRIG_INA_CPLD = !RD5_Old;
-//			outputString(&Uart1, "RD5 = Trig1_Timer2_Edge : ");
-//			outputIntAsString(&Uart1, Trig1_Timer2_Edge);
-//			outputString(&Uart1, " RD5_Old = ");
-//			outputIntAsString(&Uart1, RD5_Old);
-//			outputString(&Uart1, "\r\n");
-		}
-
-		if (Trig1_Timer3_Enabled && T3CONbits.TON == 0) {
-			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
-			asm("nop");
-			asm("nop");
-			asm("nop");
-    		TRIG_INA_CPLD = !RD5_Old ;
-//			outputString(&Uart1, "RD5 = Trig1_Timer3_Edge : ");
-//			outputIntAsString(&Uart1, Trig1_Timer3_Edge);
-//			outputString(&Uart1, " RD5_Old = ");
-//			outputIntAsString(&Uart1, RD5_Old);
-//			outputString(&Uart1, "\r\n");
-		}
-
-	}
-
-//	if (aTriggerId & 0x02) {
-//		if (Trig2_Timer2_Enabled && T2CONbits.TON == 0) {
-//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
-//			#asm
-//			nop
-//			nop
-//			nop
-//			#endasm
-//    		LATD6 = !RD6_Old;
-//			outputString(&Uart1, "RD6 = Trig2_Timer2_Edge : ");
-//			outputIntAsString(&Uart1, Trig2_Timer2_Edge);
-//			outputString(&Uart1, "\r\n");
-//		}
-//
-//		if (Trig2_Timer3_Enabled && T3CONbits.TON == 0) {
-//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
-//			#asm
-//			nop
-//			nop
-//			nop
-//			#endasm
-//    		LATD6 = !RD6_Old;
-//			outputString(&Uart1, "RD6 = Trig2_Timer3_Edge : ");
-//			outputIntAsString(&Uart1, Trig2_Timer3_Edge);
-//			outputString(&Uart1, "\r\n");
-//		}
-//	}
-
-	delay_us(50);
-
-	if (aTriggerId & 0x01) {
-		TRIG_INA_CPLD = RD5_Old;
-		TRIG_INA_CPLD_TRIS = 1;				// enable RD5 as input RD5 is shared with CN14
-		TRIG_INA_CPLD = RD5_Old;
-	}
-//
-//	if (aTriggerId & 0x02) {
-//		RD6 = RD6_Old;
-//		_TRISD6 = 0;				// enable RD6 as input RD56
-//	}
-
-	asm("nop");
-	asm("nop");
-	asm("nop");
-//	outputString(&Uart1, "STD\r\n");
-}
 
 //-----------------------------------------------------------------------------------------
 void processNextSequence(void)
@@ -704,6 +662,10 @@ void processNextSequence(void)
 	//restore the input trigger settings
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
 	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
+	DbgOut("Trig1_IN_Enabled = ");
+	DbgOutInt(Trig1_IN_Enabled);
+	DbgOut("Trig2_IN_Enabled = ");
+	DbgOutInt(Trig2_IN_Enabled);
 }
 
 //-----------------------------------------------------------------------------------------
@@ -829,7 +791,11 @@ void setPulseInfoOutput1(TBankInfo* pInfo)
 	static unsigned char old_Trig1_IN_Enabled;
 	static unsigned char old_Trig2_IN_Enabled;
 
-	if (pInfo->m_output[0].m_triggerEdge == TriggerDC)
+
+	unsigned long theDelayTimeInTicks = 0;
+	unsigned long theWidthTimeInTicks = 0;
+
+	if (pInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerDC)
 		return;
 
 	//temporarily ignore input triggers
@@ -846,88 +812,158 @@ void setPulseInfoOutput1(TBankInfo* pInfo)
 	TRIG_OUTA_PIC = 0; 		//set pulse output to low for output A
 	OUTA_CONFIG.OCTSEL = 0;	// use timer 2 as a source
 
+	theDelayTimeInTicks = getTimeInTicks(pInfo->m_output[HEAD1_IDX].m_strobeDelay);
+	theWidthTimeInTicks = getTimeInTicks(pInfo->m_output[HEAD1_IDX].m_strobeWidth);
 
-	if (pInfo->m_strobeTimerPrescaler[0] == 0xffff) {
-		if (getTimeInTicks(pInfo->m_output[0].m_strobeDelay) + getTimeInTicks(pInfo->m_output[0].m_strobeWidth) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[0] = 0;
-		else if (getTimeInTicksPre(pInfo->m_output[0].m_strobeDelay, 8) + getTimeInTicksPre(pInfo->m_output[0].m_strobeWidth, 8) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[0] = 8;
-		else if (getTimeInTicksPre(pInfo->m_output[0].m_strobeDelay, 64) + getTimeInTicksPre(pInfo->m_output[0].m_strobeWidth, 64) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[0] = 64;
-		else
-			pInfo->m_strobeTimerPrescaler[0] = 256;
+	TheDelayInfo[HEAD1_IDX].m_delayTimer  = 0;
+	TheDelayInfo[HEAD1_IDX].m_widthTimer  = 0;
+	TheDelayInfo[HEAD1_IDX].m_flags	  	  = 0;
+
+	// we need to be carefull with integer overflow if both numbers are big then adding them will yield wrong results
+	if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0 && (theDelayTimeInTicks + theWidthTimeInTicks) <= 0xFFF0) {
+		// ok in this case everything fits into PWM timer
+		TheDelayInfo[HEAD1_IDX].m_flags = tfPWMOnly;
+	} else if (theDelayTimeInTicks >= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0) {
+		// use T1 as delay and PWM for width only
+		TheDelayInfo[HEAD1_IDX].m_flags = tfDelayAsT1 | tfWidthAsPWM;
+	} else if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks >= 0xFFF0){
+		// delay use T2T3 and for width use T1
+		TheDelayInfo[HEAD1_IDX].m_flags = tfDelayAsT2T3 | tfWidthAsT1;
+	} else if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0 && (theDelayTimeInTicks + theWidthTimeInTicks) > 0xFFF0){
+		// in this case we use T2/T3 for delay first and then use PWM for width
+		TheDelayInfo[HEAD1_IDX].m_flags = tfDelayAsT2T3 | tfWidthAsPWM;
+	} else {
+		// last resort use T1 for everything
+		TheDelayInfo[HEAD1_IDX].m_flags = tfDelayAsT1 | tfWidthAsT1;
 	}
+
+
 
 	// the fixed delay between we detect the trigger and ISR enables the timer
 	// for  7.37Mhz crystal in 16X PLL mode
 	// right now for head 1 it is 3us
-	if (pInfo->m_strobeTimerPrescaler[0] == 0)
-		interruptDelay = getTimeInTicks(3);
-	else
-		interruptDelay = 0;
+	interruptDelay = getTimeInTicks(3);
 
 	DbgOut(" setPulseInfoOutput1 width=");
-	DbgOutInt(pInfo->m_output[0].m_strobeWidth);
-	DbgOut(" delay=");
-	DbgOutInt(pInfo->m_output[0].m_strobeDelay);
-	DbgOut(" scale=");
-	DbgOutInt(pInfo->m_strobeTimerPrescaler[0]);
+	DbgOutInt(pInfo->m_output[HEAD1_IDX].m_strobeWidth);
+	DbgOut(" {");
+	DbgOutInt(theWidthTimeInTicks);
+	DbgOut("} delay=");
+	DbgOutInt(pInfo->m_output[HEAD1_IDX].m_strobeDelay);
+	DbgOut(" {");
+	DbgOutInt(theDelayTimeInTicks);
+	DbgOut("} flags=");
+	DbgOutInt(TheDelayInfo[HEAD1_IDX].m_flags);
 	DbgOut(" ISR delay=");
 	DbgOutInt(interruptDelay);
 
 
-	switch (pInfo->m_strobeTimerPrescaler[0]) {
-		case 0:
-			T2CONbits.TCKPS=0x0;		// use prescaler *1:1* 1:8 1:64 1:256
-			break;
-
-		case 8:
-			T2CONbits.TCKPS=0x1;		// use prescaler 1:1 *1:8* 1:64 1:256
-			break;
-
-		case 64:
-			T2CONbits.TCKPS=0x2;		// use prescaler 1:1 1:8 *1:64* 1:256
-			break;
-
-		case 256:
-			T2CONbits.TCKPS=0x3;		// use prescaler 1:1 1:8 1:64 *1:256*
-			break;
-	}
+	T2CONbits.TCKPS=0x0;	// use prescaler *1:1* 1:8 1:64 1:256
 
 	T2CONbits.TCS=0;		// use instruction clock
 	TMR2=0;					// reset the counter for timer 2
 	_T2IF = 0;				// reset interrupt flag for timer 2
-	_T2IE = 1;				// enable timer 2 interrupt
-
-	// pulse time START
-	OUTA_TIME_START =  getTimeInTicksPre(pInfo->m_output[0].m_strobeDelay, pInfo->m_strobeTimerPrescaler[0]);
-
-	// check if the delay is more than ISR delay, then adjust it for the ISR delay
-	if (OUTA_TIME_START >= interruptDelay)
-		OUTA_TIME_START -= interruptDelay;
-	else
-		OUTA_TIME_START = 1;
-
-	if (OUTA_TIME_START == 0)			// the minimum delay is 1 timer tick
-		OUTA_TIME_START = 1;
-
-	DbgOut(" OUTA_TIME_START=");
-	DbgOutInt(OUTA_TIME_START);
-
-
-	// pulse time STOP
-	OUTA_TIME_STOP= OUTA_TIME_START + getTimeInTicksPre(pInfo->m_output[0].m_strobeWidth, pInfo->m_strobeTimerPrescaler[0]);
-
-	if (OUTA_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
-		OUTA_TIME_STOP = 2;
-
-	DbgOut(" OUTA_TIME_STOP=");
-	DbgOutInt(OUTA_TIME_STOP);
-
-	PR2 = OUTA_TIME_STOP+2;	// now program the Timer 2 duration so as soon as we program that the timer 2 is ready
-							// we will start the timer in the input interrupt, when we detect TRIG_INA
 							//
-							// TODO: check! in this interrupt we will reenable this OC module
+
+	// do everything in PWM module
+	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
+
+
+		// pulse time START
+		OUTA_TIME_START =  theDelayTimeInTicks;
+
+		// check if the delay is more than ISR delay, then adjust it for the ISR delay
+		if (OUTA_TIME_START >= interruptDelay)
+			OUTA_TIME_START -= interruptDelay;
+		else
+			OUTA_TIME_START = 1;
+
+		if (OUTA_TIME_START == 0)			// the minimum delay is 1 timer tick
+			OUTA_TIME_START = 1;
+
+		DbgOut(" PWM OUTA_TIME_START=");
+		DbgOutInt(OUTA_TIME_START);
+
+
+		// pulse time STOP
+		OUTA_TIME_STOP= OUTA_TIME_START + theWidthTimeInTicks;
+
+		if (OUTA_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
+			OUTA_TIME_STOP = 2;
+
+		DbgOut(" PWM OUTA_TIME_STOP=");
+		DbgOutInt(OUTA_TIME_STOP);
+
+		_T2IE = 1;				// enable timer 2 interrupt
+		PR2 = OUTA_TIME_STOP+2;	// now program the Timer 2 duration so as soon as we program that the timer 2 is ready
+								// we will start the timer in the input interrupt, when we detect TRIG_INA
+								//
+								// TODO: check! in this interrupt we will reenable this OC module
+	}
+
+	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfWidthAsPWM) != 0) {
+
+		// pulse time START
+		OUTA_TIME_START =  1;
+
+		// check if the delay is more than ISR delay, then adjust it for the ISR delay
+		if (OUTA_TIME_START >= interruptDelay)
+			OUTA_TIME_START -= interruptDelay;
+		else
+			OUTA_TIME_START = 1;
+
+		if (OUTA_TIME_START == 0)			// the minimum delay is 1 timer tick
+			OUTA_TIME_START = 1;
+
+		DbgOut(" WIDTH OUTA_TIME_START=");
+		DbgOutInt(OUTA_TIME_START);
+
+
+		// pulse time STOP
+		OUTA_TIME_STOP= OUTA_TIME_START + theWidthTimeInTicks;
+
+		if (OUTA_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
+			OUTA_TIME_STOP = 2;
+
+		DbgOut(" WIDTH OUTA_TIME_STOP=");
+		DbgOutInt(OUTA_TIME_STOP);
+	}
+
+
+	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfDelayAsT1) != 0) {
+		TheDelayInfo[HEAD1_IDX].m_delayTimer = getTimeInTicksPre(pInfo->m_output[HEAD1_IDX].m_strobeDelay, TIMER1_PERIOD);	// get the number of ticks per timer 1 counter
+
+		if (TheDelayInfo[HEAD1_IDX].m_delayTimer == 0)
+			TheDelayInfo[HEAD1_IDX].m_delayTimer = 1;
+		DbgOut(" T1 Delay=");
+		DbgOutInt(TheDelayInfo[HEAD1_IDX].m_delayTimer);
+	}
+
+	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfWidthAsT1) != 0) {
+		TheDelayInfo[HEAD1_IDX].m_widthTimer = getTimeInTicksPre(pInfo->m_output[HEAD1_IDX].m_strobeWidth, TIMER1_PERIOD);	// get the number of ticks per timer 1 counter
+
+		if (TheDelayInfo[HEAD1_IDX].m_widthTimer == 0)
+			TheDelayInfo[HEAD1_IDX].m_widthTimer = 1;
+
+		DbgOut(" T1 Width=");
+		DbgOutInt(TheDelayInfo[HEAD1_IDX].m_widthTimer);
+	}
+
+	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
+		_T2IE = 1;						// enable timer 2 interrupt
+										//
+		PR2 = theDelayTimeInTicks;		// now program the Timer 2 as a delay
+
+		TheDelayInfo[HEAD1_IDX].m_delayTimer = theDelayTimeInTicks;
+
+		DbgOut(" T2/T3 Delay=");
+		DbgOutInt(theDelayTimeInTicks);
+	}
+
+	// copy the flags from configuration to working
+	TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
+
+
 
 	//restore input trigger settings
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
@@ -956,7 +992,10 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 	static unsigned char old_Trig1_IN_Enabled;
 	static unsigned char old_Trig2_IN_Enabled;
 
-	if (pInfo->m_output[1].m_triggerEdge == TriggerDC)
+	unsigned long theDelayTimeInTicks = 0;
+	unsigned long theWidthTimeInTicks = 0;
+
+	if (pInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerDC)
 		return;
 
 	//temporarily ignore input triggers
@@ -966,95 +1005,164 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 	Trig1_IN_Enabled = 0;
 	Trig2_IN_Enabled = 0;
 
-
 	OUTB_CONFIG.OCM = 0;	//disable pulse module initially
 	T3CONbits.TON = 0;		//disable the timer
 
 	TRIG_OUTB_PIC = 0; 		//set pulse output to low for output B
 	OUTB_CONFIG.OCTSEL = 1;	// use timer 3 as a source
 
+	theDelayTimeInTicks = getTimeInTicks(pInfo->m_output[HEAD2_IDX].m_strobeDelay);
+	theWidthTimeInTicks = getTimeInTicks(pInfo->m_output[HEAD2_IDX].m_strobeWidth);
 
-	if (pInfo->m_strobeTimerPrescaler[1] == 0xffff) {
-		if (getTimeInTicks(pInfo->m_output[1].m_strobeDelay) + getTimeInTicks(pInfo->m_output[1].m_strobeWidth) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[1] = 0;
-		else if (getTimeInTicksPre(pInfo->m_output[1].m_strobeDelay, 8) + getTimeInTicksPre(pInfo->m_output[1].m_strobeWidth, 8) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[1] = 8;
-		else if (getTimeInTicksPre(pInfo->m_output[1].m_strobeDelay, 64) + getTimeInTicksPre(pInfo->m_output[1].m_strobeWidth, 64) < 0xFFF0)
-			pInfo->m_strobeTimerPrescaler[1] = 64;
-		else
-			pInfo->m_strobeTimerPrescaler[1] = 256;
+	TheDelayInfo[HEAD2_IDX].m_delayTimer  = 0;
+	TheDelayInfo[HEAD2_IDX].m_widthTimer  = 0;
+	TheDelayInfo[HEAD2_IDX].m_flags	  	  = 0;
+
+	// we need to be carefull with integer overflow if both numbers are big then adding them will yield wrong results
+	if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0 && (theDelayTimeInTicks + theWidthTimeInTicks) <= 0xFFF0) {
+		// ok in this case everything fits into PWM timer
+		TheDelayInfo[HEAD2_IDX].m_flags = tfPWMOnly;
+	} else if (theDelayTimeInTicks >= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0) {
+		// use T1 as delay and PWM for width only
+		TheDelayInfo[HEAD2_IDX].m_flags = tfDelayAsT1 | tfWidthAsPWM;
+	} else if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks >= 0xFFF0){
+		// delay use T2T3 and for width use T1
+		TheDelayInfo[HEAD2_IDX].m_flags = tfDelayAsT2T3 | tfWidthAsT1;
+	} else if (theDelayTimeInTicks <= 0xFFF0 && theWidthTimeInTicks <= 0xFFF0 && (theDelayTimeInTicks + theWidthTimeInTicks) > 0xFFF0){
+		// in this case we use T2/T3 for delay first and then use PWM for width
+		TheDelayInfo[HEAD2_IDX].m_flags = tfDelayAsT2T3 | tfWidthAsPWM;
+	} else {
+		// last resort use T1 for everything
+		TheDelayInfo[HEAD2_IDX].m_flags = tfDelayAsT1 | tfWidthAsT1;
 	}
+
+
 
 	// the fixed delay between we detect the trigger and ISR enables the timer
 	// for  7.37Mhz crystal in 16X PLL mode
-	// right now and for head 2 it is 6us
-	if (pInfo->m_strobeTimerPrescaler[1] == 0)
-		interruptDelay = getTimeInTicks(6);
-	else
-		interruptDelay = 0;
+	// right now for head 1 it is 3us
+	interruptDelay = getTimeInTicks(6);
 
 	DbgOut(" setPulseInfoOutput2 width=");
-	DbgOutInt(pInfo->m_output[1].m_strobeWidth);
-	DbgOut(" delay=");
-	DbgOutInt(pInfo->m_output[1].m_strobeDelay);
-	DbgOut(" scale=");
-	DbgOutInt(pInfo->m_strobeTimerPrescaler[1]);
+	DbgOutInt(pInfo->m_output[HEAD2_IDX].m_strobeWidth);
+	DbgOut(" {");
+	DbgOutInt(theWidthTimeInTicks);
+	DbgOut("} delay=");
+	DbgOutInt(pInfo->m_output[HEAD2_IDX].m_strobeDelay);
+	DbgOut(" {");
+	DbgOutInt(theDelayTimeInTicks);
+	DbgOut("} flags=");
+	DbgOutInt(TheDelayInfo[HEAD2_IDX].m_flags);
 	DbgOut(" ISR delay=");
 	DbgOutInt(interruptDelay);
 
 
-	switch (pInfo->m_strobeTimerPrescaler[1]) {
-		case 0:
-			T3CONbits.TCKPS=0x0;		// use prescaler *1:1* 1:8 1:64 1:256
-			break;
-
-		case 8:
-			T3CONbits.TCKPS=0x1;		// use prescaler 1:1 *1:8* 1:64 1:256
-			break;
-
-		case 64:
-			T3CONbits.TCKPS=0x2;		// use prescaler 1:1 1:8 *1:64* 1:256
-			break;
-
-		case 256:
-			T3CONbits.TCKPS=0x3;		// use prescaler 1:1 1:8 1:64 *1:256*
-			break;
-	}
+	T3CONbits.TCKPS=0x0;	// use prescaler *1:1* 1:8 1:64 1:256
 
 	T3CONbits.TCS=0;		// use instruction clock
 	TMR3=0;					// reset the counter for timer 3
 	_T3IF = 0;				// reset interrupt flag for timer 3
-	_T3IE = 1;				// enable timer 3 interrupt
-
-	// pulse time START
-	OUTB_TIME_START =  getTimeInTicksPre(pInfo->m_output[1].m_strobeDelay, pInfo->m_strobeTimerPrescaler[1]);
-
-	// check if the delay is more than ISR delay, then adjust it for the ISR delay
-	if (OUTB_TIME_START >= interruptDelay)
-		OUTB_TIME_START -= interruptDelay;
-	else
-		OUTB_TIME_START = 1;
-
-	if (OUTB_TIME_START == 0)			// the minimum delay is 1 timer tick
-		OUTB_TIME_START = 1;
-
-	DbgOut(" OUTB_TIME_START=");
-	DbgOutInt(OUTB_TIME_START);
-
-
-	// pulse time STOP
-	OUTB_TIME_STOP= OUTB_TIME_START + getTimeInTicksPre(pInfo->m_output[1].m_strobeWidth, pInfo->m_strobeTimerPrescaler[1]);
-
-	if (OUTB_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
-		OUTB_TIME_STOP = 2;
-
-	DbgOut(" OUTB_TIME_STOP=");
-	DbgOutInt(OUTB_TIME_STOP);
-
-	PR3 = OUTB_TIME_STOP+2;	// now program the Timer 3 duration so as soon as we program that the timer 3 is ready
-							// we will start the timer in the input interrupt, when we detect TRIG_INB
 							//
-							// TODO: check! in this interrupt we will reenable this OC module
+
+	// do everything in PWM module
+	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
+
+
+		// pulse time START
+		OUTB_TIME_START =  theDelayTimeInTicks;
+
+		// check if the delay is more than ISR delay, then adjust it for the ISR delay
+		if (OUTB_TIME_START >= interruptDelay)
+			OUTB_TIME_START -= interruptDelay;
+		else
+			OUTB_TIME_START = 1;
+
+		if (OUTB_TIME_START == 0)			// the minimum delay is 1 timer tick
+			OUTB_TIME_START = 1;
+
+		DbgOut(" PWM OUTB_TIME_START=");
+		DbgOutInt(OUTB_TIME_START);
+
+
+		// pulse time STOP
+		OUTB_TIME_STOP= OUTB_TIME_START + theWidthTimeInTicks;
+
+		if (OUTB_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
+			OUTB_TIME_STOP = 2;
+
+		DbgOut(" PWM OUTB_TIME_STOP=");
+		DbgOutInt(OUTB_TIME_STOP);
+
+		_T3IE = 1;				// enable timer 2 interrupt
+		PR3 = OUTB_TIME_STOP+2;	// now program the Timer 2 duration so as soon as we program that the timer 2 is ready
+								// we will start the timer in the input interrupt, when we detect TRIG_INA
+								//
+								// TODO: check! in this interrupt we will reenable this OC module
+	}
+
+	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfWidthAsPWM) != 0) {
+
+		// pulse time START
+		OUTB_TIME_START =  1;
+
+		// check if the delay is more than ISR delay, then adjust it for the ISR delay
+		if (OUTB_TIME_START >= interruptDelay)
+			OUTB_TIME_START -= interruptDelay;
+		else
+			OUTB_TIME_START = 1;
+
+		if (OUTB_TIME_START == 0)			// the minimum delay is 1 timer tick
+			OUTB_TIME_START = 1;
+
+		DbgOut(" WIDTH OUTB_TIME_START=");
+		DbgOutInt(OUTB_TIME_START);
+
+
+		// pulse time STOP
+		OUTB_TIME_STOP= OUTB_TIME_START + theWidthTimeInTicks;
+
+		if (OUTB_TIME_STOP < 2)			// the minimum width is 1 timer tick after the delay
+			OUTB_TIME_STOP = 2;
+
+		DbgOut(" WIDTH OUTB_TIME_STOP=");
+		DbgOutInt(OUTB_TIME_STOP);
+	}
+
+
+	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfDelayAsT1) != 0) {
+		TheDelayInfo[HEAD2_IDX].m_delayTimer = getTimeInTicksPre(pInfo->m_output[HEAD2_IDX].m_strobeDelay, TIMER1_PERIOD);	// get the number of ticks per timer 1 counter
+
+		if (TheDelayInfo[HEAD2_IDX].m_delayTimer == 0)
+			TheDelayInfo[HEAD2_IDX].m_delayTimer = 1;
+		DbgOut(" T1 Delay=");
+		DbgOutInt(TheDelayInfo[HEAD2_IDX].m_delayTimer);
+	}
+
+	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfWidthAsT1) != 0) {
+		TheDelayInfo[HEAD2_IDX].m_widthTimer = getTimeInTicksPre(pInfo->m_output[HEAD2_IDX].m_strobeWidth, TIMER1_PERIOD);	// get the number of ticks per timer 1 counter
+
+		if (TheDelayInfo[HEAD2_IDX].m_widthTimer == 0)
+			TheDelayInfo[HEAD2_IDX].m_widthTimer = 1;
+
+		DbgOut(" T1 Width=");
+		DbgOutInt(TheDelayInfo[HEAD2_IDX].m_widthTimer);
+	}
+
+	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
+		_T3IE = 1;						// enable timer 3 interrupt
+										//
+		PR3 = theDelayTimeInTicks;		// now program the Timer 3 as a delay
+
+		TheDelayInfo[HEAD2_IDX].m_delayTimer = theDelayTimeInTicks;
+
+		DbgOut(" T2/T3 Delay=");
+		DbgOutInt(theDelayTimeInTicks);
+	}
+
+	// copy the flags from configuration to working
+	TheDelayInfoWorking[HEAD2_IDX] = TheDelayInfo[HEAD2_IDX];
+
+
 
 	//restore input trigger settings
 	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
@@ -1064,10 +1172,12 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 }
 
 
+/**
+ * processTriggerIn() processes the trigger input and starts the
+ * corresponding timer module
+*/
 //-----------------------------------------------------------------------------------------
-// Here is our lovely interrupt function that processes trigger input change
-//-----------------------------------------------------------------------------------------
-void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
+void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 {
 	static unsigned char theTrigInACpld;
 	static unsigned char theTrigInBCpld;
@@ -1075,27 +1185,136 @@ void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
 	static unsigned char bIncTrig1;
 	static unsigned char bIncTrig2;
 
-	theTrigInACpld  = TRIG_INA_CPLD;	// Current status of IO
-	theTrigInBCpld  = TRIG_INB_CPLD;
+
+	theTrigInACpld  = aTrigInACpld;	// Current status of IO
+	theTrigInBCpld  = aTrigInBCpld;
 
 	bIncTrig1 = bIncTrig2 = 0;
+
+	#ifdef TRIG_TIMING_DEBUG_OUT
+		DbgOut("processTriggerIn\r\n");
+	#endif
 
 	// trig 1 is fired
 	if (Trig1_IN_Last != theTrigInACpld && Trig1_IN_Enabled) {
 
-		// only if the edge is the same and the timer is not running
-		if (Trig1_Timer2_Enabled && theTrigInACpld == Trig1_Timer2_Edge && T2CONbits.TON == 0) {
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("Trig 1, OK\r\n");
+		#endif
 
-			OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
-			T2CONbits.TON = 1;		// turn ON timer
+		// only if the edge is the same and the timer is not running
+		if (Trig1_Timer2_Enabled && theTrigInACpld == Trig1_Timer2_Edge && (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) == 0) {
+
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("Trig H1, T2 OK\r\n");
+			#endif
+
+			// when we get the trigger here we can process only 3 possible conditions
+			// first is if we use PWM module for both delay and width
+			// second if we use T2/T3 for the delay
+			// and third if we use T1 for the delay
+			// the width controlling part will be done in interrupts for T1 or T2/T3
+			//
+			// the order of IF statements is important to minimise the delays
+
+			if ((TheDelayInfo[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
+				OUTA_CONFIG.OCM = 0x4;		// enable single pulse mode
+				_T2IE = 1;					// enable timer 2 interrupt
+				TMR2 = 0;					// reset the counter for timer 2
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR2);
+					DbgOut(" Trig 1: tfPWMOnly\r\n");
+				#endif
+
+				T2CONbits.TON = 1;		// turn ON timer
+			} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
+				OUTA_CONFIG.OCM = 0;	// disable single pulse mode
+
+				_T2IE = 1;					// enable timer 2 interrupt
+				TMR2 = 0;					// reset the counter for timer 2
+				PR2 = TheDelayInfo[HEAD1_IDX].m_delayTimer;	// now program the Timer 2 duration for the delay
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR2);
+					DbgOut(" Trig 1: tfDelayAsT2T3\r\n");
+				#endif
+
+				T2CONbits.TON = 1;			// turn ON timer just a timer
+
+			} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT1) != 0) {
+				OUTA_CONFIG.OCM = 0;	// disable single pulse mode
+				T2CONbits.TON = 0;		// disable timer
+
+				// set the flag that the delay counter is ON and active NOW
+				// so every Timer1 period we will process the delay
+				TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfDelayAsT1ON;
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("Trig 1: tfDelayAsT1\r\n");
+				#endif
+			}
+			// the trigger has been processed
+			// do not re-program hardware until it is cleared
+			TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
 
 			bIncTrig1 = 1;
 		}
 
 		// only if the edge is the same and the timer is not running
-		if (Trig1_Timer3_Enabled && theTrigInACpld == Trig1_Timer3_Edge && T3CONbits.TON == 0) {
-			OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
-    		T3CONbits.TON = 1;		// turn ON timer
+		if (Trig1_Timer3_Enabled && theTrigInACpld == Trig1_Timer3_Edge && (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) == 0) {
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("Trig H2, T2 OK\r\n");
+			#endif
+
+			// when we get the trigger here we can process only 3 possible conditions
+			// first is if we use PWM module for both delay and width
+			// second if we use T2/T3 for the delay
+			// and third if we use T1 for the delay
+			// the width controlling part will be done in interrupts for T1 or T2/T3
+			//
+			// the order of IF statements is important to minimise the delays
+
+			if ((TheDelayInfo[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
+				OUTB_CONFIG.OCM = 0x4;		// enable single pulse mode
+				_T3IE = 1;					// enable timer 3 interrupt
+				TMR3 = 0;					// reset the counter for timer 3
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR3);
+					DbgOut(" Trig H2: tfPWMOnly\r\n");
+				#endif
+
+				T3CONbits.TON = 1;		// turn ON timer
+			} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
+				OUTB_CONFIG.OCM = 0;	// disable single pulse mode
+
+				_T3IE = 1;					// enable timer 3 interrupt
+				TMR3 = 0;					// reset the counter for timer 3
+				PR3 = TheDelayInfo[HEAD2_IDX].m_delayTimer;	// now program the Timer 3 duration for the delay
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR3);
+					DbgOut(" Trig H2: tfDelayAsT2T3\r\n");
+				#endif
+
+				T3CONbits.TON = 1;			// turn ON timer just a timer
+
+			} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT1) != 0) {
+				OUTB_CONFIG.OCM = 0;	// disable single pulse mode
+				T3CONbits.TON = 0;		// disable timer
+
+				// set the flag that the delay counter is ON and active NOW
+				// so every Timer1 period we will process the delay
+				TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfDelayAsT1ON;
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("Trig H2: tfDelayAsT1\r\n");
+				#endif
+			}
+			// the trigger has been processed
+			// do not re-program hardware until it is cleared
+			TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
 
 			bIncTrig1 = 1;
 		}
@@ -1104,19 +1323,125 @@ void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
 	// trig 2 is fired
 	if (Trig2_IN_Last != theTrigInBCpld  && Trig2_IN_Enabled) {
 
-		// only if the edge is the same and the timer is not running
-		if (Trig2_Timer2_Enabled && theTrigInBCpld == Trig2_Timer2_Edge && T2CONbits.TON == 0) {
 
-			OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
-    		T2CONbits.TON = 1;		// turn ON timer
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("Trig 2, OK\r\n");
+		#endif
+
+		// only if the edge is the same and the timer is not running
+		if (Trig2_Timer2_Enabled && theTrigInBCpld == Trig2_Timer2_Edge && (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) == 0) {
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("Trig H1, T2 OK\r\n");
+			#endif
+
+			// when we get the trigger here we can process only 3 possible conditions
+			// first is if we use PWM module for both delay and width
+			// second if we use T2/T3 for the delay
+			// and third if we use T1 for the delay
+			// the width controlling part will be done in interrupts for T1 or T2/T3
+			//
+			// the order of IF statements is important to minimise the delays
+
+			if ((TheDelayInfo[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
+				OUTA_CONFIG.OCM = 0x4;		// enable single pulse mode
+				_T2IE = 1;					// enable timer 2 interrupt
+				TMR2 = 0;					// reset the counter for timer 2
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR2);
+					DbgOut(" Trig 1: tfPWMOnly\r\n");
+				#endif
+
+				T2CONbits.TON = 1;		// turn ON timer
+			} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
+				OUTA_CONFIG.OCM = 0;	// disable single pulse mode
+
+				_T2IE = 1;					// enable timer 2 interrupt
+				TMR2 = 0;					// reset the counter for timer 2
+				PR2 = TheDelayInfo[HEAD1_IDX].m_delayTimer;	// now program the Timer 2 duration for the delay
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR2);
+					DbgOut(" Trig 1: tfDelayAsT2T3\r\n");
+				#endif
+
+				T2CONbits.TON = 1;			// turn ON timer just a timer
+
+			} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT1) != 0) {
+				OUTA_CONFIG.OCM = 0;	// disable single pulse mode
+				T2CONbits.TON = 0;		// disable timer
+
+				// set the flag that the delay counter is ON and active NOW
+				// so every Timer1 period we will process the delay
+				TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfDelayAsT1ON;
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("Trig 1: tfDelayAsT1\r\n");
+				#endif
+			}
+			// the trigger has been processed
+			// do not re-program hardware until it is cleared
+			TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
+
+
 			bIncTrig2 = 1;
 		}
 
 		// only if the edge is the same and the timer is not running
-		if (Trig2_Timer3_Enabled && theTrigInBCpld == Trig2_Timer3_Edge && T3CONbits.TON == 0) {
+		if (Trig2_Timer3_Enabled && theTrigInBCpld == Trig2_Timer3_Edge && (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) == 0) {
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("Trig H2, T2 OK\r\n");
+			#endif
 
-			OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
-    		T3CONbits.TON = 1;	// turn ON timer
+			// when we get the trigger here we can process only 3 possible conditions
+			// first is if we use PWM module for both delay and width
+			// second if we use T2/T3 for the delay
+			// and third if we use T1 for the delay
+			// the width controlling part will be done in interrupts for T1 or T2/T3
+			//
+			// the order of IF statements is important to minimise the delays
+
+			if ((TheDelayInfo[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
+				OUTB_CONFIG.OCM = 0x4;		// enable single pulse mode
+				_T3IE = 1;					// enable timer 3 interrupt
+				TMR3 = 0;					// reset the counter for timer 3
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR3);
+					DbgOut(" Trig H2: tfPWMOnly\r\n");
+				#endif
+
+				T3CONbits.TON = 1;		// turn ON timer
+			} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
+				OUTB_CONFIG.OCM = 0;	// disable single pulse mode
+
+				_T3IE = 1;					// enable timer 3 interrupt
+				TMR3 = 0;					// reset the counter for timer 3
+				PR3 = TheDelayInfo[HEAD2_IDX].m_delayTimer;	// now program the Timer 3 duration for the delay
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR3);
+					DbgOut(" Trig H2: tfDelayAsT2T3\r\n");
+				#endif
+
+				T3CONbits.TON = 1;			// turn ON timer just a timer
+
+			} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT1) != 0) {
+				OUTB_CONFIG.OCM = 0;	// disable single pulse mode
+				T3CONbits.TON = 0;		// disable timer
+
+				// set the flag that the delay counter is ON and active NOW
+				// so every Timer1 period we will process the delay
+				TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfDelayAsT1ON;
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("Trig H2: tfDelayAsT1\r\n");
+				#endif
+			}
+			// the trigger has been processed
+			// do not re-program hardware until it is cleared
+			TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
+
 			bIncTrig2 = 1;
 		}
 
@@ -1127,6 +1452,138 @@ void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
 
 	if (bIncTrig1) ++theTriggerCounter1;	// increment the trigger counter
 	if (bIncTrig2) ++theTriggerCounter2;	// increment the trigger counter
+}
+
+
+/**
+ * The procedure processes the Timer 1 intervals
+ *
+ * When we get timer 1 event we will check the trigger flags and
+ * decrement our delay and width counters
+ *
+ * When the counters reach 0 then we will do the trigger
+ * processing
+*/
+//-----------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
+// Here is our lovely interrupt function that Timer 4 period change
+//-----------------------------------------------------------------------------------------
+void _ISR __attribute__ ((auto_psv)) _T4Interrupt (void)
+{
+	// increment timer counetr
+	OS_Timer();
+
+	// if the delay timer is enabled for head 1
+	if (TheDelayInfoWorking[HEAD1_IDX].m_delayTimer != 0 && (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT1ON) != 0) {
+		if (--TheDelayInfoWorking[HEAD1_IDX].m_delayTimer == 0) {
+			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsT1) != 0) {
+				TRIG_OUTA_PIC = 1;								// manualy raise the light trigger pin
+
+				TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfWidthAsT1ON;	// start the timer 1 counting for width
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("T1: tfDelayAsT1ON::tfWidthAsT1\r\n");
+				#endif
+			}
+
+			// now check if we need to control width through PWM
+			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsPWM) != 0) {
+				OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+				_T2IE = 1;				// enable timer 2 interrupt
+				PR2 = OUTA_TIME_STOP+2;	// now program the Timer 2 duration so as soon as we program that the timer 2 is ready
+										//
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR2);
+					DbgOut(" T1: tfDelayAsT1ON::tfWidthAsPWM\r\n");
+				#endif
+				T2CONbits.TON = 1;		// enable the timer 2
+			}
+
+			// reset the flag so we do not get here twice
+			TheDelayInfoWorking[HEAD1_IDX].m_flags &= ~tfDelayAsT1ON;
+		}
+	}
+
+	// if the width timer is enabled for head 1
+	if (TheDelayInfoWorking[HEAD1_IDX].m_widthTimer != 0 && (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsT1ON) != 0) {
+		if (--TheDelayInfoWorking[HEAD1_IDX].m_widthTimer == 0) {
+			TRIG_OUTA_PIC = 0;		// manualy lower down the light trigger pin
+
+			// restore the flags and get ready for next trigger
+			TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("T1: tfWidthAsT1OFF\r\n");
+			#endif
+		}
+	}
+
+
+	// if the delay timer is enabled for head 2
+	if (TheDelayInfoWorking[HEAD2_IDX].m_delayTimer != 0 && (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT1ON) != 0) {
+		if (--TheDelayInfoWorking[HEAD2_IDX].m_delayTimer == 0) {
+			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsT1) != 0) {
+				TRIG_OUTB_PIC = 1;								// manualy raise the light trigger pin
+
+				TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfWidthAsT1ON;	// start the timer 1 counting for width
+
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOut("T1H2: tfDelayAsT1ON::tfWidthAsT1\r\n");
+				#endif
+			}
+
+			// now check if we need to control width through PWM
+			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsPWM) != 0) {
+				OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+				_T3IE = 1;				// enable timer 3 interrupt
+				PR3 = OUTB_TIME_STOP+2;	// now program the Timer 3 duration so as soon as we program that the timer 2 is ready
+										//
+				#ifdef TRIG_TIMING_DEBUG_OUT
+					DbgOutInt(PR3);
+					DbgOut(" T1H2: tfDelayAsT1ON::tfWidthAsPWM\r\n");
+				#endif
+				T3CONbits.TON = 1;		// enable the timer 3
+			}
+
+			// reset the flag so we do not get here twice
+			TheDelayInfoWorking[HEAD2_IDX].m_flags &= ~tfDelayAsT1ON;
+		}
+	}
+
+	// if the width timer is enabled for head 2
+	if (TheDelayInfoWorking[HEAD2_IDX].m_widthTimer != 0 && (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsT1ON) != 0) {
+		if (--TheDelayInfoWorking[HEAD2_IDX].m_widthTimer == 0) {
+			TRIG_OUTB_PIC = 0;		// manualy lower down the light trigger pin
+
+			// restore the flags and get ready for next trigger
+			TheDelayInfoWorking[HEAD2_IDX] = TheDelayInfo[HEAD2_IDX];
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOut("T1H2: tfWidthAsT1OFF\r\n");
+			#endif
+		}
+	}
+
+	_T4IF = 0;				// important to clear this bit
+}
+
+//-----------------------------------------------------------------------------------------
+// Here is our lovely interrupt function that processes trigger input change
+//-----------------------------------------------------------------------------------------
+void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
+{
+	#if 0
+	static unsigned int i;
+	// for debugging purpose
+	_LATE6 = 1;
+	for (i = 100; i > 0; --i) {
+		Nop();
+	}
+	_LATE6 = 0;
+
+	#endif
+
+	processTriggerIn(TRIG_INA_CPLD, TRIG_INB_CPLD);
 
 	_CNIF = 0;	// important to clear this bit
 }
@@ -1142,7 +1599,62 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 	TMR2 = 0;				// reset the counter for timer 2
 	TRIG_OUTA_PIC = 0;		// make sure it is LOW
 
-	OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+	// the first portion if we control the delay through the Timer 2/3
+	// in this case we still need to do the width portion
+	if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
+
+		// reset the flag so we do not get here twice
+		TheDelayInfoWorking[HEAD1_IDX].m_flags &= ~tfDelayAsT2T3;
+
+		// now check if we need to control width through PWM
+		if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsPWM) != 0) {
+			OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+			TMR2 = 0;					// reset the counter for timer 2
+			PR2 = OUTA_TIME_STOP+2;		// now program the Timer 2 duration for the PWM width
+
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOutInt(PR2);
+				DbgOut(" T2: tfDelayAsT2T3::tfWidthAsPWM\r\n");
+			#endif
+
+			T2CONbits.TON = 1;			// turn ON timer just a timer
+		}
+
+		// we do the width control trough the timer 1
+		else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsT1) != 0) {
+			TRIG_OUTA_PIC = 1;						// raise the trigger pin
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOutInt(TheDelayInfoWorking[HEAD1_IDX].m_widthTimer);
+				DbgOut(" T2: tfDelayAsT2T3::tfWidthAsT1\r\n");
+			#endif
+			TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfWidthAsT1ON;	// start the timer 1 counting
+		}
+
+	}
+
+	// we do PWM mode only both the delay and width already processed
+	// restore the flags and get ready for next trigger
+	else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
+		TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
+		OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("T2: tfPWMOnly\r\n");
+		#endif
+	}
+
+	// we finished PWM mode for width, then restore the flags
+	else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsPWM) != 0) {
+		TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("T2: tfWidthAsPWM\r\n");
+		#endif
+	}
+	#ifdef TRIG_TIMING_DEBUG_OUT
+		DbgOut("T2\r\n");
+	#endif
+
 
 //	AdvanceToTheNextBank = 1;
 
@@ -1158,13 +1670,171 @@ void _ISR __attribute__ ((auto_psv)) _T3Interrupt (void)
 {
 	T3CONbits.TON = 0;		// disable the timer 3
 	OUTB_CONFIG.OCM = 0;	// disable single pulse mode
-							//
+
 	TMR3 = 0;				// reset the counter for timer 3
 	TRIG_OUTB_PIC = 0;		// make sure it is LOW
 
-	OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+	// the first portion if we control the delay through the Timer 2/3
+	// in this case we still need to do the width portion
+	if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
+
+		// reset the flag so we do not get here twice
+		TheDelayInfoWorking[HEAD2_IDX].m_flags &= ~tfDelayAsT2T3;
+
+		// now check if we need to control width through PWM
+		if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsPWM) != 0) {
+			OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+			TMR3 = 0;					// reset the counter for timer 3
+			PR3 = OUTB_TIME_STOP+2;		// now program the Timer 3 duration for the PWM width
+
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOutInt(PR3);
+				DbgOut(" T3H2: tfDelayAsT2T3::tfWidthAsPWM\r\n");
+			#endif
+
+			T3CONbits.TON = 1;			// turn ON timer just a timer
+		}
+
+		// we do the width control trough the timer 1
+		else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsT1) != 0) {
+			TRIG_OUTB_PIC = 1;						// raise the trigger pin
+			#ifdef TRIG_TIMING_DEBUG_OUT
+				DbgOutInt(TheDelayInfoWorking[HEAD2_IDX].m_widthTimer);
+				DbgOut(" T3H2: tfDelayAsT2T3::tfWidthAsT1\r\n");
+			#endif
+			TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfWidthAsT1ON;	// start the timer 1 counting
+		}
+
+	}
+
+	// we do PWM mode only both the delay and width already processed
+	// restore the flags and get ready for next trigger
+	else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
+		TheDelayInfoWorking[HEAD2_IDX] = TheDelayInfo[HEAD2_IDX];
+		OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("T3H2: tfPWMOnly\r\n");
+		#endif
+	}
+
+	// we finished PWM mode for width, then restore the flags
+	else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfWidthAsPWM) != 0) {
+		TheDelayInfoWorking[HEAD2_IDX] = TheDelayInfo[HEAD2_IDX];
+		#ifdef TRIG_TIMING_DEBUG_OUT
+			DbgOut("T3H2: tfWidthAsPWM\r\n");
+		#endif
+	}
+	#ifdef TRIG_TIMING_DEBUG_OUT
+		DbgOut("T3\r\n");
+	#endif
 
 	_T3IF = 0;				// important to clear this bit
 }
 
+
+//-----------------------------------------------------------------------------------------
+// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+
+void fireSoftTrigger(unsigned char aTriggerId)
+{
+	#if 0
+	unsigned char RD5_Old;
+	unsigned char RD6_Old;
+
+	RD5_Old = TRIG_INA_CPLD;
+	RD6_Old = _RD6;
+
+//	outputString(&Uart1, "ST \r\n");
+//
+//	outputString(&Uart1, " Trig2_IN = ");
+//	outputIntAsString(&Uart1, Trig2_IN);
+//
+//	outputString(&Uart1, " LATD6 = ");
+//	outputIntAsString(&Uart1, LATD6);
+//
+//	outputString(&Uart1, "\r\n");
+
+	if (aTriggerId & 0x01) {
+		if (Trig1_Timer2_Enabled && T2CONbits.TON == 0) {
+			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
+			asm("nop");
+			asm("nop");
+			asm("nop");
+    		TRIG_INA_CPLD = !RD5_Old;
+//			outputString(&Uart1, "RD5 = Trig1_Timer2_Edge : ");
+//			outputIntAsString(&Uart1, Trig1_Timer2_Edge);
+//			outputString(&Uart1, " RD5_Old = ");
+//			outputIntAsString(&Uart1, RD5_Old);
+//			outputString(&Uart1, "\r\n");
+		}
+
+		if (Trig1_Timer3_Enabled && T3CONbits.TON == 0) {
+			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
+			asm("nop");
+			asm("nop");
+			asm("nop");
+    		TRIG_INA_CPLD = !RD5_Old ;
+//			outputString(&Uart1, "RD5 = Trig1_Timer3_Edge : ");
+//			outputIntAsString(&Uart1, Trig1_Timer3_Edge);
+//			outputString(&Uart1, " RD5_Old = ");
+//			outputIntAsString(&Uart1, RD5_Old);
+//			outputString(&Uart1, "\r\n");
+		}
+
+	}
+
+//	if (aTriggerId & 0x02) {
+//		if (Trig2_Timer2_Enabled && T2CONbits.TON == 0) {
+//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
+//			#asm
+//			nop
+//			nop
+//			nop
+//			#endasm
+//    		LATD6 = !RD6_Old;
+//			outputString(&Uart1, "RD6 = Trig2_Timer2_Edge : ");
+//			outputIntAsString(&Uart1, Trig2_Timer2_Edge);
+//			outputString(&Uart1, "\r\n");
+//		}
+//
+//		if (Trig2_Timer3_Enabled && T3CONbits.TON == 0) {
+//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
+//			#asm
+//			nop
+//			nop
+//			nop
+//			#endasm
+//    		LATD6 = !RD6_Old;
+//			outputString(&Uart1, "RD6 = Trig2_Timer3_Edge : ");
+//			outputIntAsString(&Uart1, Trig2_Timer3_Edge);
+//			outputString(&Uart1, "\r\n");
+//		}
+//	}
+
+	delay_us(50);
+
+	if (aTriggerId & 0x01) {
+		TRIG_INA_CPLD = RD5_Old;
+		TRIG_INA_CPLD_TRIS = 1;				// enable RD5 as input RD5 is shared with CN14
+		TRIG_INA_CPLD = RD5_Old;
+	}
+//
+//	if (aTriggerId & 0x02) {
+//		RD6 = RD6_Old;
+//		_TRISD6 = 0;				// enable RD6 as input RD56
+//	}
+
+	asm("nop");
+	asm("nop");
+	asm("nop");
+//	outputString(&Uart1, "STD\r\n");
+	#endif
+
+	DbgOut("fireSoftTrigger \r\n");
+	processTriggerIn(0, 0);
+	processTriggerIn(1, 1);
+
+}
 

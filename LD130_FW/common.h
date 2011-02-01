@@ -116,4 +116,10 @@ typedef struct tag_UARTBuff2
 
 void delay_us(unsigned long aTimeInMicrosec);
 
+
+#define TIMER1_PERIOD 1000
+
+#define HEAD1_IDX	0
+#define HEAD2_IDX	1
+
 #endif

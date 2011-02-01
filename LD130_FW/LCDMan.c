@@ -15,6 +15,8 @@
 #include "Common.h"
 #include <stdio.h>
 
+int snprintf(char *, size_t, const char *, ...);
+
 #define NUM_OF_SCREENS 3
 
 static char TheScreens[NUM_OF_SCREENS][LCD_MAXROWS][LCD_MAXCOLS];
@@ -267,6 +269,7 @@ const char* getIntAsString(char* buf, unsigned long aValue)
 	return pCh;
 }
 
+
 //-----------------------------------------------------------------------------------------
 int getTemperatureAsString(char* buf, size_t size, double aValue)
 {
@@ -433,3 +436,31 @@ void updateScreen3(unsigned short aCounter)
 	setLcdChar(2, 3, 7, '.');
 	setLcdChar(2, 3, 8, VERSION_BUILD+'0');
 }
+
+
+
+//-----------------------------------------------------------------------------------------
+void setLcdTextUpdate(unsigned char aScreenId, unsigned char aLine, unsigned char aCol, const char* pText)
+{
+	unsigned char  i = 0;
+	unsigned char  j = 0;
+	if (aScreenId >= NUM_OF_SCREENS) aScreenId = NUM_OF_SCREENS-1;
+
+	setLcdText(aScreenId, aLine, aCol, pText);
+
+	// in case if LCD was disconnected
+	// and then connected back we need to reinitialize it
+	if (!is_lcd_initialized()) {
+		lcd_init();
+	}
+
+	// update the active LCD screen immediately
+	for (i = 0; i < LCD_MAXROWS; ++i) {
+		lcd_gotoxy (i+1, 1);				// Position cursor
+		for (j = 0; j < LCD_MAXCOLS; ++j) {
+			lcd_putc (TheScreens[aScreenId][i][j]);	//	Show and bump
+		}
+	}
+
+}
+
