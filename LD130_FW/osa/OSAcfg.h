@@ -26,13 +26,7 @@
 
 #define OS_ENABLE_CSEM              // Enable counting semaphores
 #define OS_ENABLE_TTIMERS           // Enable task timers (OS_Delay and OS_xxx_Wait_TO)
-
-
-//------------------------------------------------------------------------------
-// INTERRUPT SERVICES
-//------------------------------------------------------------------------------
-
-#define OS_ENABLE_INT_CSEM
+#define OS_USE_INLINE_TIMER         // Make OS_Timer service as in-line function
 
 
 //------------------------------------------------------------------------------

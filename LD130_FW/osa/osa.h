@@ -32,20 +32,20 @@
  *
  *  History:        10.00.2010 -    Removed all modification marks
  *  History:        10.07.2010 -    Added ports for STM8: IAR and Raisonance
- * 
+ *
  *                  25.10.2010  -   Bug fixed: OS_Qtimer_Break did not deleted timer from the list
  *                              -   Bug fixed: interrupt became disables after calling OS_Qtimer_Run for timer already
  *                                  presented in queue
  *                              -   (osa_qtimer.c)
  *                              -   (osa_pic16_htpicc.c)
  *                              -   Definition of OS_Ttimer_Delay fixed (osa_ttimer.h)
- * 
+ *
  *                  30.10.2010  -   Another bug in qtimers fixed (osa_qtimer.c, osa_pic16_htpicc.c)
- * 
+ *
  *                  22.11.2010  -   IAR for AVR port bugs fixed (osa_avr_iar.h)
- * 
+ *
  *                  08.12.2010  -   osa_pic18_htpicc.h
- * 
+ *
  *
  *
  ************************************************************************************************
@@ -89,8 +89,8 @@
 #elif defined(__18CXX)              /* Microchip C18    */
 
     #if __EXTENDED18__ == 1
-        #define __OSA_PIC18_MPLABC_EXT__     
-        #define __OSAMCC18EXT__             /*old*/ 
+        #define __OSA_PIC18_MPLABC_EXT__
+        #define __OSAMCC18EXT__             /*old*/
     #else
         #define __OSA_PIC18_MPLABC__
         #define __OSAMCC18__                /*old*/
@@ -195,7 +195,7 @@
     #define __OSAIARAVR__       /*old*/
     #define __OSAAVR__          /*old*/
     #define __OSAICCAVR__       /*old*/
- 
+
     #define OS_PROTECT_MEMORY_ACCESS            // for atomic access protection
 
 //------------------------------------------------------------------------------
@@ -333,9 +333,9 @@
 
 
 //******************************************************************************
-// 
+//
 //  CHECK FOR SET OF SERVICES
-// 
+//
 //******************************************************************************
 
 
@@ -408,7 +408,7 @@
 
 #endif
 
-#if defined(OS_ENABLE_QTIMER) && defined(__OSA_PIC12_HTPICC__) 
+#if defined(OS_ENABLE_QTIMER) && defined(__OSA_PIC12_HTPICC__)
 #error "OSA error #22: Qtimers are not supported under 12-bit controllers (PIC10 and PIC12)"
 #endif
 
@@ -482,7 +482,7 @@
                                     /* pointers to messages and simple messages */
 
     #define OS_ENABLE_INT_FLAG      /* Enables interrupt services for flags     */
-                                    
+
 #endif
 
 
@@ -493,7 +493,6 @@
     defined(OS_ENABLE_INT_QUEUE) ||                     \
     defined(OS_ENABLE_INT_FLAG)  ||                     \
     defined(OS_PROTECT_MEMORY_ACCESS)
-
 
     #define OS_ENABLE_INT
 
@@ -514,7 +513,7 @@
 
 
 #ifdef OS_ENABLE_PTIMERS        /* Redefining old name (ptimer) to new (dtimer) */
-    #define OS_ENABLE_DTIMERS 
+    #define OS_ENABLE_DTIMERS
 #endif
 
 #if !defined(OS_STIMERS)
@@ -677,9 +676,9 @@
 
 
 //******************************************************************************
-//  
+//
 //  Checking validness of bank settings for each type of OSA data
-// 
+//
 //******************************************************************************
 
 
@@ -1002,7 +1001,7 @@
 #define OS_QTIMER_TYPE      OST_UINT32
 
 #else
-#error "OSA error #21: Bad QTIMER size (must be 1, 2 or 4)" 
+#error "OSA error #21: Bad QTIMER size (must be 1, 2 or 4)"
         /* See manual section "Appendix/Error codes" for more information*/
 #endif
 
@@ -1110,9 +1109,9 @@ typedef OS_MSG_TYPE     OST_MSG;
 //  Pointer to message descriptor
 //******************************************************************************
 
-typedef 
+typedef
 #ifndef __OSA_AVR_CODEVISION__
-        volatile 
+        volatile
 #endif
                     struct _OST_MSG_CB
 {
@@ -1136,7 +1135,7 @@ typedef struct
     OST_UINT   cSize;      // Queue size
     OST_UINT   cFilled;    // Number of filled elements
     OST_UINT   cBegin;     // First element in buffer
-                           // 
+                           //
 } OST_QUEUE_CONTROL;
 
 
@@ -1175,9 +1174,9 @@ typedef struct
 
 
 //******************************************************************************
-//  
+//
 //  System state flags
-// 
+//
 //  (!!!Do not change positions of theese bits. For MCC30 bits
 //  cIPL_Temp must occupy 5, 6 and 7 positions)
 //******************************************************************************
@@ -1204,9 +1203,9 @@ typedef struct
             #if OS_PRIORITY_LEVEL == OS_PRIORITY_EXTENDED
             OST_UINT   bEventOK           : 1; // Goes "1" when task was run after OS_Wait
                                                // See OS_Sched definition
-                                               // 
+                                               //
                                                // Have #15 for PIC24 and dsPIC !!!!
-                                               // 
+                                               //
             #endif
 
 
@@ -1216,9 +1215,9 @@ typedef struct
 
 
 //******************************************************************************
-//  
+//
 //  Task state flags
-// 
+//
 //  !Do not change placement of theese bits
 //******************************************************************************
 
@@ -1317,9 +1316,9 @@ typedef OS_TASKS_BANK OST_TCB *     OST_TASK_POINTER;
      *------------------------------------------*
      */
 
-    typedef 
+    typedef
     #ifndef __OSA_AVR_CODEVISION__
-            volatile 
+            volatile
     #endif
                         struct
     {
@@ -1348,7 +1347,7 @@ typedef OS_TASKS_BANK OST_TCB *     OST_TASK_POINTER;
         OST_DTIMER_FLAGS        Flags;       // Timer's state flags
         struct S_OST_DTIMER    *Next;        // Pointer to next timer in list
         OS_DTIMER_TYPE          Timer;       // Counter
-                                             // 
+                                             //
     } OST_DTIMER;
 
     /*
@@ -1392,9 +1391,9 @@ typedef OS_TASKS_BANK OST_TCB *     OST_TASK_POINTER;
      *------------------------------------------*
      */
 
-    typedef 
+    typedef
     #ifndef __OSA_AVR_CODEVISION__
-            volatile 
+            volatile
     #endif
                         struct
     {
@@ -1437,7 +1436,7 @@ typedef OS_TASKS_BANK OST_TCB *     OST_TASK_POINTER;
         OST_QTIMER_FLAGS        Flags;         // Timer's state flags
         struct S_OST_QTIMER    *Next;          // Pointer to next timer in list
         OS_QTIMER_TYPE          Timer;         // Counter
-                                               // 
+                                               //
     } OST_QTIMER;
 
     /*
@@ -1526,7 +1525,7 @@ extern OST_TASK_POINTER OS_RAM_NEAR volatile    _OS_CurTask;
 #if OS_PRIORITY_LEVEL == OS_PRIORITY_NORMAL
 
     extern  OS_BANK          OST_UINT               _OS_Best_Priority;
-    
+
     #if defined(__OSA_CCS__) || defined(__OSA_IAR__)
     // The CCS compiler do not allows to declare a volatile pointers
     extern OST_TASK_POINTER OS_BANK                 _OS_BestTask;
@@ -1541,10 +1540,10 @@ extern OST_TASK_POINTER OS_RAM_NEAR volatile    _OS_CurTask;
 
 #if OS_PRIORITY_LEVEL == OS_PRIORITY_EXTENDED
 
-/* 
+/*
     typedef union
-    {   
-        struct 
+    {
+        struct
         {
             OST_UINT8   cPriority;
             OST_UINT8   cTaskPos;
@@ -1674,7 +1673,7 @@ extern OST_TASK_POINTER OS_RAM_NEAR volatile    _OS_CurTask;
 
 
 //******************************************************************************
-// These two macros are used in mikroC for PIC16. For all others they are 
+// These two macros are used in mikroC for PIC16. For all others they are
 // defined as empty macros
 // -----------------------------------------------------------------------------
 #ifndef _OS_SET_IRP_CUR_TASK
@@ -1702,4 +1701,4 @@ extern OST_TASK_POINTER OS_RAM_NEAR volatile    _OS_CurTask;
 //******************************************************************************
 //  END OF FILE osa.h
 //******************************************************************************
-    
+
