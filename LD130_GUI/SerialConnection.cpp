@@ -288,10 +288,12 @@ TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 				return retValue;
 			}
 
-			if (cmdReply[cmdIdx] == 0 || cmdReply[cmdIdx] == '\n') {
-				break;
+			if (read) {
+				if (cmdReply[cmdIdx] == 0 || cmdReply[cmdIdx] == '\n') {
+					break;
+				}
+				++cmdIdx;
 			}
-			++cmdIdx;
 		} while (cmdIdx < sizeof(cmdReply) / sizeof(cmdReply[0]));
 
 		int replyParameters = ParseSentence(cmdReply);

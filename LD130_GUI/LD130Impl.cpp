@@ -282,7 +282,7 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 	aData.m_strobeWidth  = std::min(std::max(aData.m_strobeWidth, 	0),  	0xFFFFFFFF);        // the duration of outcoming light strobe in microseconds
 	aData.m_triggerEdge  = std::min(std::max(aData.m_triggerEdge, 	0),  	2);                 // the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
 	aData.m_triggerId    = std::min(std::max(aData.m_triggerId, 	1),  	3);                 // the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-	aData.m_chanelAmplifier= std::min(std::max(aData.m_triggerId, 	1),  	5);                 // the amplification value 1-5
+	aData.m_chanelAmplifier= std::min(std::max(aData.m_chanelAmplifier, 	1),  	5);         // the amplification value 1-5
 
 	// save the data localy
 	m_bankData[aData.m_bankId-1].m_headData[aData.m_outputId-1] = aData;

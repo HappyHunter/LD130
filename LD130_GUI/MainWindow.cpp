@@ -403,6 +403,8 @@ void TFormMainWindow::updateControlsForSelectedBank()
 
 	if (theHeadData.m_chanelAmplifier > 0 && theHeadData.m_chanelAmplifier <= 5)
 		grHead1Amplifier->ItemIndex  = theHeadData.m_chanelAmplifier - 1;
+    else
+        grHead1Amplifier->ItemIndex  = 0;
 
 	THeadStatus theHeadStatus = m_LD130.getHeadStatus(1);
 
@@ -463,6 +465,8 @@ void TFormMainWindow::updateControlsForSelectedBank()
 
 	if (theHeadData.m_chanelAmplifier > 0 && theHeadData.m_chanelAmplifier <= 5)
 		grHead2Amplifier->ItemIndex  = theHeadData.m_chanelAmplifier - 1;
+    else
+        grHead2Amplifier->ItemIndex  = 0;
 
 	theHeadStatus = m_LD130.getHeadStatus(2);
 
