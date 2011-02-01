@@ -93,20 +93,50 @@ typedef struct tag_BankHeadData {
 	unsigned char	m_reserved[16];	 //reserver for future
 } TBankHeadData;
 
+
+typedef enum tag_TChanelStatus
+{
+	csOK			= 0,	// Chanel status OK
+} TChanelStatus;
+
+typedef struct tag_TInt64 {
+    #ifdef __cplusplus
+    tag_TInt64() {
+		m_low = 0;
+		m_hi = 0;
+    }
+    #endif
+
+    unsigned long	m_low;
+    unsigned long	m_hi;
+} TInt64;
+
 // The controller will reply this message back with the status of each chanel
 typedef struct tag_HeadStatus {
     #ifdef __cplusplus
     tag_HeadStatus() {
-	m_statusChanel1 = 0;
-	m_statusChanel2 = 0;
-	m_statusChanel3 = 0;
-	m_statusChanel4 = 0;
+		m_statusChanel1 = 0;
+		m_statusChanel2 = 0;
+		m_statusChanel3 = 0;
+		m_statusChanel4 = 0;
     }
     #endif
+
     unsigned short	m_statusChanel1;
     unsigned short	m_statusChanel2;
     unsigned short	m_statusChanel3;
     unsigned short	m_statusChanel4;
+
+	TInt64			m_trigCountChanel1;	// life time trigger count
+	TInt64			m_trigCountChanel2;	// life time trigger count
+	TInt64			m_trigCountChanel3;	// life time trigger count
+	TInt64			m_trigCountChanel4;	// life time trigger count
+
+	TInt64			m_onTimeChanel1;	// ON time for the light
+	TInt64			m_onTimeChanel2;	// ON time for the light
+	TInt64			m_onTimeChanel3;	// ON time for the light
+	TInt64			m_onTimeChanel4;	// ON time for the light
+
 } THeadStatus;
 
 
@@ -115,9 +145,9 @@ typedef struct tag_HeadStatus {
 typedef struct tag_Status {
     #ifdef __cplusplus
     tag_Status() {
-	m_temperatureH1 = 0;
-	m_temperatureH2 = 0;
-	m_temperatureAmb = 0;
+		m_temperatureH1 = 0;
+		m_temperatureH2 = 0;
+		m_temperatureAmb = 0;
     }
     #endif
     float	m_temperatureH1;
