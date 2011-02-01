@@ -65,7 +65,7 @@
 
 ;		.equ 	BAUDRATE, 	9600				;xxx baudrate
 		.equ 	BAUDRATE, 	115200				;xxx baudrate
-		.equ	BLTIME,		5000				;xxx time in ms before bootloader loads the user application
+		.equ	BLTIME,		2000				;xxx time in ms before bootloader loads the user application
 
        	.equ    USE_UART1,	1					;xxx uncomment to use uart1
        	;.equ	USE_UART2,	1					;xxx uncomment to use uart2
