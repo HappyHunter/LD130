@@ -102,6 +102,7 @@ unsigned short makeVoltageDACValue_LTC1329(unsigned long aPower)
 short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, unsigned short aValue)
 {
 	unsigned short workingChanelBin = 0x1000;
+	unsigned short originalValue = aValue;
 
 	switch (aChanel) {
 		case 1:
@@ -153,7 +154,9 @@ short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, uns
 	DbgOutInt(aChanel);
 	DbgOut(",");
 	DbgOutInt(aValue);
-	DbgOut(")\r\n");
+	DbgOut(" {");
+	DbgOutInt(originalValue);
+	DbgOut("})\r\n");
 
 	// select slave device
 	initSPI1(1/*1 = 16 bit ON*/, 1 /*CKE*/, 0/*CKP*/);
