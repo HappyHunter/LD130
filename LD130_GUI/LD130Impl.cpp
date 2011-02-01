@@ -276,8 +276,8 @@ TCommandErrorOutput TLD130Impl::setBankHeadData(TBankHeadData aData)
 	aData.m_voltage 	 = std::min(std::max(aData.m_voltage, 		0), 	100);               // 0 - 100 Volts
 	aData.m_powerChanel1 = std::min(std::max(aData.m_powerChanel1,	0), 	10000);			    // 0 - 100 00% with fixed decimal point at 2 digits
 	aData.m_powerChanel2 = std::min(std::max(aData.m_powerChanel2,	0), 	10000);             // for example the power of 35.23% will be sent as 3523
-	aData.m_powerChanel3 = std::min(std::max(aData.m_powerChanel4,	0), 	10000);             // the power of 99.00% will be sent as 9900
-	aData.m_powerChanel4 = std::min(std::max(aData.m_powerChanel3,	0), 	10000);             // the power of 100.00% will be sent as 10000
+	aData.m_powerChanel3 = std::min(std::max(aData.m_powerChanel3,	0), 	10000);             // the power of 99.00% will be sent as 9900
+	aData.m_powerChanel4 = std::min(std::max(aData.m_powerChanel4,	0), 	10000);             // the power of 100.00% will be sent as 10000
 	aData.m_strobeDelay  = std::min(std::max(aData.m_strobeDelay, 	0),  	0xFFFFFFFF);        // the delay of outcoming light strobe in microseconds
 	aData.m_strobeWidth  = std::min(std::max(aData.m_strobeWidth, 	0),  	0xFFFFFFFF);        // the duration of outcoming light strobe in microseconds
 	aData.m_triggerEdge  = std::min(std::max(aData.m_triggerEdge, 	0),  	2);                 // the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode

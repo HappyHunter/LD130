@@ -163,12 +163,12 @@ object FormMainWindow: TFormMainWindow
       Top = 0
       Width = 784
       Height = 504
-      ActivePage = tabLog
+      ActivePage = TabSheet1
       Align = alClient
       BoldCurrentTab = True
       UseColoredTabs = True
       ShowCardFrame = False
-      TabIndex = 2
+      TabIndex = 0
       TabOrder = 0
       FixedDimension = 19
       object TabSheet1: TRzTabSheet

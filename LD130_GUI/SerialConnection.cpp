@@ -296,7 +296,8 @@ TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 
 		int replyParameters = ParseSentence(cmdReply);
 		if (replyParameters == 0) {
-			strncpy(retValue.m_errorDescription, "No Reply from controller", sizeof(retValue.m_errorDescription));
+			snprintf(retValue.m_errorDescription, sizeof(retValue.m_errorDescription), "No Reply from controller (%s)", cmdReply);
+//			strncpy(retValue.m_errorDescription, "No Reply from controller", sizeof(retValue.m_errorDescription));
 			strncpy(retValue.m_errorId, "80000012", sizeof(retValue.m_errorId));
 		} else
 
