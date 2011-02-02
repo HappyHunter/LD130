@@ -12,6 +12,7 @@
 #include "SPI.h"
 #include "Uart.h"
 #include "LTC_DAC.h"
+#include "MCP23S17.h"
 
 
 
@@ -137,16 +138,50 @@ unsigned char AdvanceToTheNextBank = 1;	// flag that is set when we nned to adva
 
 
 
-
+/**
+ * getTimeInTicks() converts microcesonds to the system timer
+ * tick counts
+ *
+ * Note that the function itself takes between 1060 to 1076
+ * ticks to do the conversion
+ *
+ * and it takes 34 cycles to do the lookup
+ */
 //-----------------------------------------------------------------------------------------
-static inline unsigned long getTimeInTicks(long double aTimeInMicrosec)
+// this table is for CPU running at 14MHz
+static const unsigned short theDelayLookupTable[80] __attribute__ ((space(auto_psv))) =
 {
-	return ((unsigned long)((long double)((long double)(A_FOSC_)/((long double)1000000.0)) * (aTimeInMicrosec))) ;
+	0,	  14,  29,  44,  58,  73,  88, 103, 117, 132,
+	147, 162, 176, 191, 206, 221, 235, 250, 265, 280,
+	294, 309, 324, 339, 353, 368, 383, 398, 412, 427,
+	442, 456, 471, 486, 501, 515, 530, 545, 560, 574,
+	589, 604, 619, 633, 648, 663, 678, 692, 707, 722,
+	737, 751, 766, 781, 796, 810, 825, 840, 854, 869,
+	884, 899, 913, 928, 943, 958, 972, 987,1002,1017,
+   1031,1046,1061,1076,1090,1105,1120,1135,1149,1164,
+};
+
+static inline unsigned long getTimeInTicks(unsigned long aTimeInMicrosec)
+{
+
+	if (aTimeInMicrosec < (sizeof(theDelayLookupTable)/ sizeof(theDelayLookupTable[0]))) {
+
+		// we need to multiply the return value by 2 in case if we use 30MHz
+		#ifdef USE_30_MHZ
+		return (theDelayLookupTable[aTimeInMicrosec]<<1);
+		#else
+		return theDelayLookupTable[aTimeInMicrosec];
+		#endif
+	}
+
+	return ((unsigned long)((long double)(((long double)(A_FOSC_/1000000.0)) * ((long double)aTimeInMicrosec)))) ;
+	//	return ((unsigned long)((long double)((long double)(A_FOSC_)/((long double)1000000.0)) * (aTimeInMicrosec))) ;
 }
 
 static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long double timerPreScaler)
 {
-	return ((unsigned long)((long double)(((long double)A_FOSC_)/((long double)1000000.0) * (aTimeInMicrosec)) / timerPreScaler)) ;
+	return ((unsigned long)((long double)(((long double)(A_FOSC_/1000000.0)) * (aTimeInMicrosec)) / timerPreScaler)) ;
+//	return ((unsigned long)((long double)(((long double)A_FOSC_)/((long double)1000000.0) * (aTimeInMicrosec)) / timerPreScaler)) ;
 }
 
 
@@ -178,17 +213,71 @@ static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long 
  */
 #define AC_DC_H1			_LATF0
 #define AC_DC_H2			_LATF1
+
 /**
  * stops execution by the delay specified
- * since it involves division operation which takes 18 cycles be
- * carefull on slow speeds
+ * since it involves getTimeInTicks() function we need to
+ * differintiate for the speed
+ *
+ * For the delays less than 3 usec we use hard coded values from
+ * getTimeInTicks() function
+ *
+ * For larger delays we need to subtract the time it takes to
+ * call the getTimeInTicks() function
+ *
 */
 //-----------------------------------------------------------------------------------------
 void delay_us(unsigned long aTimeInMicrosec)
 {
 	static unsigned long i;
-	for (i = (getTimeInTicks(aTimeInMicrosec) >> 1); i > 0; --i) {
+
+	//  case of 0usec delay
+	if (aTimeInMicrosec == 0) {
 		Nop();
+		Nop();
+		return;
+	}
+
+	//  case of 1usec delay
+	if (aTimeInMicrosec == 1) {
+		#ifdef USE_30_MHZ
+			for (i = 28; i > 0; --i) {
+				Nop();
+			}
+		#else
+			for (i = 14; i > 0; --i) {
+				Nop();
+			}
+		#endif
+		return;
+	}
+
+	//  case of 2usec delay
+	if (aTimeInMicrosec == 2) {
+		#ifdef USE_30_MHZ
+			for (i = 58; i > 0; --i) {
+				Nop();
+			}
+		#else
+			for (i = 29; i > 0; --i) {
+				Nop();
+			}
+		#endif
+	   	return;
+	}
+
+	//  case of 3usec or more delay
+	// we need to subtract 33 clock cycles it takes to call the getTimeInTicks()
+	// if we use the lookup table
+	// otherwise the calculations can take around 1060 clock cycles
+	if (aTimeInMicrosec < (sizeof(theDelayLookupTable)/ sizeof(theDelayLookupTable[0]))) {
+		for (i = (getTimeInTicks(aTimeInMicrosec) - 34); i > 0; --i) {
+			Nop();
+		}
+	} else{
+		for (i = (getTimeInTicks(aTimeInMicrosec) - 1060); i > 0; --i) {
+			Nop();
+		}
 	}
 }
 
@@ -364,6 +453,26 @@ void programBank(TBankInfo* pBankInfo)
 
 		}
 	}
+
+	int iii;
+	for (iii = 1; iii < 100; ++iii) {
+		int tm1 = TMR1;
+		int t = getTimeInTicks(iii);
+		int tm2 = TMR1;
+
+		DbgOut("getTimeInTicks tm1=");
+		DbgOutInt(tm1);
+		DbgOut("  tm2=");
+		DbgOutInt(tm2);
+		DbgOut("  iii=");
+		DbgOutInt(iii);
+		DbgOut("  t=");
+		DbgOutInt(t);
+		DbgOut("  diff=");
+		DbgOutInt(tm2-tm1);
+		DbgOut("\r\n");
+	}
+
 
 	_T2IE = 0;				// disable timer 2 interrupt
 	_T3IE = 0;				// disable timer 3 interrupt
@@ -556,6 +665,10 @@ void programOutputHead(TBankInfo* pInfo, unsigned char anOutputId)
 	setCurrentDACValue(anOutputId, 2, pInfo->m_output[anOutputId-1].m_powerChanel2, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
 	setCurrentDACValue(anOutputId, 3, pInfo->m_output[anOutputId-1].m_powerChanel3, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
 	setCurrentDACValue(anOutputId, 4, pInfo->m_output[anOutputId-1].m_powerChanel4, pInfo->m_output[anOutputId-1].m_chanelAmplifier);
+
+	// enable or disable VOUT for each chanel separately
+	// in case if the chanel power is set to 0
+	MCP23S17EnableVout(anOutputId, pInfo->m_output[anOutputId-1].m_powerChanel1, pInfo->m_output[anOutputId-1].m_powerChanel2, pInfo->m_output[anOutputId-1].m_powerChanel3, pInfo->m_output[anOutputId-1].m_powerChanel4);
 
 	// in case if all the current values are set to 0 set voltage to 0 as well
 	setVoltageDACValue(anOutputId, noChannelPower ? 0 : pInfo->m_output[anOutputId-1].m_voltage);

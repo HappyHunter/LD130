@@ -287,9 +287,9 @@ void Init (void)
 	IPC0bits.T1IP = 0x04;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
 	TMR1=0;					// reset the counter for timer 1
 	_T1IF = 0;				// reset interrupt flag for timer 1
-	_T1IE = 1;				// enable timer 1 interrupt
-	PR1 = TIMER1_PERIOD;	// every 1000 cycles
-	T1CONbits.TON = 0;		// start the timer
+//	_T1IE = 1;				// enable timer 1 interrupt
+	PR1 = 32768;	// every 1000 cycles
+	T1CONbits.TON = 1;		// start the timer
 
 
 	// program and start T1 timer
