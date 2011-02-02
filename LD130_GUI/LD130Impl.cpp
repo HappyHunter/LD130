@@ -51,6 +51,13 @@ bool TLD130Impl::isConnected() const
 
 
 //-----------------------------------------------------------------------------------------
+void TLD130Impl::close()
+{
+	m_conMan.close();
+}
+
+
+//-----------------------------------------------------------------------------------------
 TCommandErrorOutput TLD130Impl::softTrig(int aTrigId)
 {
   	char cmdBuf[1024] = {0};

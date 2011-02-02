@@ -255,11 +255,18 @@ void __fastcall TFormMainWindow::cbComPortCloseUp(TObject *Sender)
 	RzFieldFirmwareVersion->Caption = "";
 	RzFieldActiveBank->Caption = "";
 
-	char str2[64] = {0};
-	_snprintf (str2, sizeof(str2), "COM%d", cbComPort->ItemIndex);
-	int speed = RzRegIniFile->ReadInteger(str2, "Speed", 9600);
+	int theSpeed = 115200;
 
-	TCommandErrorOutput retCode = m_LD130.init(cbComPort->ItemIndex, speed, &OnLogEvent);
+	AnsiString theComPort(0);
+    if (cbComPort->ItemIndex >= 0) {
+		theComPort = cbComPort->Values->Strings[cbComPort->ItemIndex];
+
+		char str2[64] = {0};
+    	_snprintf (str2, sizeof(str2), "COM%s", theComPort.c_str());
+		theSpeed = RzRegIniFile->ReadInteger(str2, "Speed", 115200);
+    }
+
+	TCommandErrorOutput retCode = m_LD130.init(theComPort.ToInt(), theSpeed, &OnLogEvent);
 
 	if (retCode.hasError()) {
 		RzFieldFirmwareVersion->Caption = "ERROR";
@@ -534,6 +541,7 @@ void __fastcall TFormMainWindow::FormShow(TObject *Sender)
 {
 	RzPanelVersion->Caption = RzPanelVersion->Caption + RzVersionInfo->FileVersion;
 	RzPageControlParameters->ActivePage = TabSheet1;
+	rzRefreshClick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -915,5 +923,44 @@ void __fastcall TFormMainWindow::tbChanel4Head2Changing(TObject *Sender,
     m_head2PowerChanging = false;
 
 }
+//---------------------------------------------------------------------------
+
+
+void __fastcall TFormMainWindow::rzRefreshClick(TObject *Sender)
+{
+	m_LD130.close();
+	RzFieldFirmwareVersion->Caption = "";
+	RzStatusOperation->Caption="";
+
+	cbComPort->ClearItemsValues();
+
+	cbComPort->AddItemValue("No COM", AnsiString(0));
+
+	char 	str[128] = {0};
+	HANDLE 	hComPort = 0;
+
+	for (int i = 1; i < 50; ++i) {
+
+		_snprintf (str, sizeof(str), "\\\\.\\COM%d", i);
+
+		hComPort = CreateFile( str,
+			GENERIC_READ | GENERIC_WRITE,
+			0,    									// must be opened with exclusive-access
+			0, 										// no security attributes
+			OPEN_EXISTING, 							// must use OPEN_EXISTING
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,					// for overlapped IO
+			NULL  									// hTemplate must be NULL for comm devices
+		);
+		if (hComPort != INVALID_HANDLE_VALUE && hComPort != 0) {
+			_snprintf (str, sizeof(str), "COM %d", i);
+			cbComPort->AddItemValue(str, AnsiString(i));
+
+			::CloseHandle(hComPort);
+		}
+	}
+
+    cbComPort->ItemIndex = 0;
+}
+
 //---------------------------------------------------------------------------
 

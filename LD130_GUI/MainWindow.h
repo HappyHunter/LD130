@@ -251,6 +251,7 @@ __published:	// IDE-managed Components
     TRzCheckGroup *grHead2Lock;
     TRzTabSheet *tabLog;
     TRzListBox *lbFullLog;
+    TRzBitBtn *rzRefresh;
 	void __fastcall TimerUpdateTimer(TObject *Sender);
 	void __fastcall EditChange(TObject *Sender);
 	void __fastcall TrackBarChange(TObject *Sender);
@@ -308,6 +309,7 @@ __published:	// IDE-managed Components
           bool &AllowChange);
     void __fastcall tbChanel4Head2Changing(TObject *Sender, int NewPos,
           bool &AllowChange);
+    void __fastcall rzRefreshClick(TObject *Sender);
 
 
 private:	// User declarations

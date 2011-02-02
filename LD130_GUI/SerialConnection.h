@@ -25,6 +25,7 @@ public:
 	TCommandErrorOutput send(const char* pCmd) const;
 
 	TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TSerialOnLogEvent pLogEvent = 0);
+	void close();
 
 	static const char * GetValueByName(const char * pName);
 	static const char * GetCmdName();

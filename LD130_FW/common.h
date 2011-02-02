@@ -38,7 +38,7 @@
 /**
  * The com port 1 baud rate used for communications with PC
 */
-#define A_BAUDE_RATE 9600
+#define A_BAUDE_RATE 115200
 
 //-----------------------------------------------------------------------------------------
 // the software version

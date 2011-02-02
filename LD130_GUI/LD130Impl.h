@@ -29,6 +29,8 @@ public:
 
     TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TLD130OnLogEvent onLogEvent = 0);
 
+    void close();
+
     bool isConnected() const;
 
     void getVersion(string& verMajor, string& verMinor,string& verBuild) const

@@ -178,6 +178,14 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 	return retCode;
 }
 
+
+//-----------------------------------------------------------------------------------------
+void TSerialConMan::close()
+{
+	::CloseHandle(m_hComPort);
+	m_hComPort = 0;
+}
+
 //-----------------------------------------------------------------------------------------
 bool TSerialConMan::isConnected() const
 {
@@ -264,6 +272,7 @@ TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 		DWORD read = 0;
 		unsigned int cmdIdx = 0;
 		char 		 cmdReply[4096] = {0};
+		unsigned short theRetryCount = 0;
 
 		do {
 			if (!::ReadFile (m_hComPort, &cmdReply[cmdIdx], sizeof(cmdReply[cmdIdx]), &read, &m_overlappedIn)){
@@ -293,6 +302,9 @@ TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 					break;
 				}
 				++cmdIdx;
+				theRetryCount = 0;
+			} else if (++theRetryCount > 5) {
+				break;
 			}
 		} while (cmdIdx < sizeof(cmdReply) / sizeof(cmdReply[0]));
 

@@ -11,7 +11,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File001]
@@ -24,7 +24,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File002]
@@ -37,7 +37,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File003]
@@ -50,7 +50,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File004]
@@ -63,7 +63,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File005]
@@ -76,7 +76,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File006]
@@ -89,7 +89,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File007]
@@ -102,7 +102,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File008]
@@ -115,7 +115,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File009]
@@ -128,7 +128,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File010]
@@ -141,7 +141,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File011]
@@ -154,7 +154,7 @@ LanguageToolLocation=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.ex
 PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|osa||$(LIBDIR)||$(LKRDIR)||
 SOLK=<src>|main.c|osa\osa.c|Uart.c|parser.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c||<obj>||<lib>||<lkr>||
 SuiteArgsString=
-ToolArgsString=-g -Wall -fverbose-asm  
+ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File012]

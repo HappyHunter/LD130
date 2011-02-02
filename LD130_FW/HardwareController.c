@@ -454,6 +454,7 @@ void programBank(TBankInfo* pBankInfo)
 		}
 	}
 
+	#if 0
 	int iii;
 	for (iii = 1; iii < 100; ++iii) {
 		int tm1 = TMR1;
@@ -472,6 +473,7 @@ void programBank(TBankInfo* pBankInfo)
 		DbgOutInt(tm2-tm1);
 		DbgOut("\r\n");
 	}
+	#endif
 
 
 	_T2IE = 0;				// disable timer 2 interrupt

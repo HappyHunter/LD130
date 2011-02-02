@@ -12,7 +12,8 @@
 #include <stdio.h>
 #include "LCDMan.h"
 
-unsigned short Baud_Rate(unsigned long A_BAUD_) { return ((unsigned short)(A_FOSC_/(16UL * A_BAUD_) -1)); }
+unsigned short Baud_Rate(unsigned long A_BAUD_) { return (unsigned short)((((A_FOSC_/A_BAUD_)/8)-1)/2); }
+
 
 // prototype functions
 void outputIntAsHexString(int aPort, unsigned long aValue);
