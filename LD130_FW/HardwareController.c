@@ -17,7 +17,7 @@
 
 // devine this one to print into COM2 the debug info about the parameters for
 // the triggrt timing
-#define TRIG_TIMING_DEBUG_OUT
+//#define TRIG_TIMING_DEBUG_OUT
 
 //-----------------------------------------------------------------------------------------
 // Currently we can have up to 4 banks of parameters.
@@ -139,14 +139,14 @@ unsigned char AdvanceToTheNextBank = 1;	// flag that is set when we nned to adva
 
 
 //-----------------------------------------------------------------------------------------
-static unsigned long getTimeInTicks(unsigned long aTimeInMicrosec)
+static inline unsigned long getTimeInTicks(long double aTimeInMicrosec)
 {
-	return ((unsigned long)((A_FOSC_/1000000UL) * aTimeInMicrosec)) ;
+	return ((unsigned long)((long double)((long double)(A_FOSC_)/((long double)1000000.0)) * (aTimeInMicrosec))) ;
 }
 
-static unsigned long getTimeInTicksPre(unsigned long aTimeInMicrosec, unsigned long timerPreScaler)
+static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long double timerPreScaler)
 {
-	return ((unsigned long)((A_FOSC_/1000000UL) * aTimeInMicrosec) / (timerPreScaler ? timerPreScaler : 1)) ;
+	return ((unsigned long)((long double)(((long double)A_FOSC_)/((long double)1000000.0) * (aTimeInMicrosec)) / timerPreScaler)) ;
 }
 
 
@@ -1040,7 +1040,7 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 
 	// the fixed delay between we detect the trigger and ISR enables the timer
 	// for  7.37Mhz crystal in 16X PLL mode
-	// right now for head 1 it is 3us
+	// right now for head 2 it is 6us
 	interruptDelay = getTimeInTicks(6);
 
 	DbgOut(" setPulseInfoOutput2 width=");
