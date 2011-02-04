@@ -5,7 +5,7 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="LD130.exe"/>
     <OBJFILES value="out\LD130.obj out\MainWindow.obj out\ComPortConfig.obj out\CommonData.obj 
-      out\parser.obj out\SerialConnection.obj out\LD130Impl.obj"/>
+      out\LD130Impl.obj out\SerialConnection.obj out\parser.obj"/>
     <RESFILES value="LD130.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) MainWindow.dfm ComPortConfig.dfm CommonData.dfm"/>
@@ -23,7 +23,7 @@
       indy.bpi bcb2kaxserver.bpi cxLibraryVCLC6.bpi dxThemeC6.bpi 
       cxEditorsVCLC6.bpi cxDataC6.bpi cxExtEditorsVCLC6.bpi cxGridVCLC6.bpi 
       cxGridUtilsVCLC6.bpi Aceris.bpi B6XLR4_R.bpi o406_r61.bpi"/>
-    <PATHCPP value=".;..\LD130_FW"/>
+    <PATHCPP value=".;..\Intf"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -33,8 +33,8 @@
     <USERDEFINES value="_DEBUG"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="LD130.cpp"/>
-    <INCLUDEPATH value="..\LD130_FW;&quot;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\CX Library\C++Builder 6\Lib&quot;;&quot;C:\Program Files\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;&quot;\DevExpress\ExpressDataController\C++Builder 6\Lib&quot;;&quot;\DevExpress\XP Theme Manager\C++Builder 6\Lib&quot;;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;&quot;C:\Program Files (x86)\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files (x86)\Borland\CBuilder6\Projects&quot;"/>
-    <LIBPATH value="..\LD130_FW;&quot;\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\ExpressDataController\C++Builder 6\Lib&quot;;&quot;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\XP Theme Manager\C++Builder 6\Lib&quot;;&quot;\DevExpress\CX Library\C++Builder 6\Lib&quot;;&quot;C:\Program Files\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;&quot;C:\Program Files (x86)\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files (x86)\Borland\CBuilder6\Projects&quot;"/>
+    <INCLUDEPATH value="..\Intf;..\LD130_FW;&quot;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\CX Library\C++Builder 6\Lib&quot;;&quot;C:\Program Files\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;&quot;\DevExpress\ExpressDataController\C++Builder 6\Lib&quot;;&quot;\DevExpress\XP Theme Manager\C++Builder 6\Lib&quot;;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;&quot;C:\Program Files (x86)\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files (x86)\Borland\CBuilder6\Projects&quot;"/>
+    <LIBPATH value="..\Intf;..\LD130_FW;&quot;\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\ExpressDataController\C++Builder 6\Lib&quot;;&quot;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib&quot;;&quot;\DevExpress\XP Theme Manager\C++Builder 6\Lib&quot;;&quot;\DevExpress\CX Library\C++Builder 6\Lib&quot;;&quot;C:\Program Files\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files\Borland\CBuilder6\Projects&quot;;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;&quot;C:\Program Files (x86)\Raize\RC4\Lib\BCB6&quot;;&quot;C:\Program Files (x86)\Borland\CBuilder6\Projects&quot;"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -59,9 +59,9 @@
       <FILE FILENAME="MainWindow.cpp" FORMNAME="FormMainWindow" UNITNAME="MainWindow" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="ComPortConfig.cpp" FORMNAME="FormComPortConfig" UNITNAME="ComPortConfig" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="CommonData.cpp" FORMNAME="DataModuleCommon" UNITNAME="CommonData" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\LD130_FW\parser.c" FORMNAME="" UNITNAME="parser" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="SerialConnection.cpp" FORMNAME="" UNITNAME="SerialConnection" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="LD130Impl.cpp" FORMNAME="" UNITNAME="LD130Impl" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\Intf\LD130Impl.cpp" FORMNAME="" UNITNAME="LD130Impl.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\Intf\SerialConnection.cpp" FORMNAME="" UNITNAME="SerialConnection.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\Intf\parser.c" FORMNAME="" UNITNAME="parser" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -86,34 +86,36 @@ CodePage=1252
 CompanyName=Boreal Vision Solutions Inc.
 FileDescription=LD 130 GUI
 FileVersion=1.0.0.2
-InternalName=
-LegalCopyright=
+InternalName=LD130 User interface
+LegalCopyright=Boreal inc 2001-2011
 LegalTrademarks=
-OriginalFilename=
+OriginalFilename=LD130.exe
 ProductName=LD 130
 ProductVersion=1.0.0.0
 Comments=
 
 [HistoryLists\hlIncludePath]
-Count=10
-Item0=..\LD130_FW;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
-Item1=..\LD130_FW;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
-Item2=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
-Item3=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls
-Item4=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
-Item5=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib\;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
-Item6=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
-Item7=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib\;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
-Item8=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
-Item9=C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Count=11
+Item0=..\Intf;..\LD130_FW;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item1=..\LD130_FW;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item2=..\LD130_FW;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item3=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item4=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl;$(aceris)\Components\XiControls
+Item5=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Item6=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\ExpressDataController\C++Builder 6\Lib\;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Item7=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Item8=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib\;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Item9=D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
+Item10=C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
-Count=5
-Item0=..\LD130_FW;\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
-Item1=..\LD130_FW;D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
-Item2=..\LD130_FW;D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item3=D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
-Item4=C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Count=6
+Item0=..\Intf;..\LD130_FW;\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item1=..\LD130_FW;\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;\DevExpress\ExpressDataController\C++Builder 6\Lib;\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;\DevExpress\XP Theme Manager\C++Builder 6\Lib;\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item2=..\LD130_FW;D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;$(BCB)\lib\obj;$(BCB)\lib;C:\Program Files (x86)\Raize\RC4\Lib\BCB6;C:\Program Files (x86)\Borland\CBuilder6\Projects
+Item3=..\LD130_FW;D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item4=D:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;D:\DevExpress\ExpressDataController\C++Builder 6\Lib;D:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;D:\DevExpress\XP Theme Manager\C++Builder 6\Lib;D:\DevExpress\CX Library\C++Builder 6\Lib;C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
+Item5=C:\Program Files\Raize\RC4\Lib\BCB6;C:\Program Files\Borland\CBuilder6\Projects;C:\#WORK\Boreal\LD130_GUI;$(BCB)\Projects\Lib;C:\DevExpress\ExpressQuantumGrid 4\C++Builder 6\Lib;C:\DevExpress\ExpressDataController\C++Builder 6\Lib;C:\DevExpress\ExpressEditors Library 4\C++Builder 6\Lib;C:\DevExpress\XP Theme Manager\C++Builder 6\Lib;C:\DevExpress\CX Library\C++Builder 6\Lib;$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
 Count=1

@@ -12,7 +12,7 @@
 #include <ctime>
 #include <cassert>
 
-#include "..\LD130_FW\parser.h"
+#include "parser.h"
 
 #include "MainWindow.h"
 //---------------------------------------------------------------------------
