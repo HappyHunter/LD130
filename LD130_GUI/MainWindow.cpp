@@ -266,7 +266,7 @@ void __fastcall TFormMainWindow::cbComPortCloseUp(TObject *Sender)
 		theSpeed = RzRegIniFile->ReadInteger(str2, "Speed", 115200);
     }
 
-	TCommandErrorOutput retCode = m_LD130.init(theComPort.ToInt(), theSpeed, &OnLogEvent);
+	TCommandErrorOutput retCode = m_LD130.init(theComPort.ToInt(), theSpeed, &OnLogEvent, this);
 
 	if (retCode.hasError()) {
 		RzFieldFirmwareVersion->Caption = "ERROR";
@@ -680,7 +680,7 @@ void __fastcall TFormMainWindow::actActivateBankUpdate(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void TFormMainWindow::OnLogEvent(const char* pCmd, const char* pLogStr)
+void TFormMainWindow::OnLogEvent(const void* anObject, const char* pCmd, const char* pLogStr)
 {
 	while (FormMainWindow->lbLog->Items->Count > 500) {
 		FormMainWindow->lbLog->Items->Delete(0);

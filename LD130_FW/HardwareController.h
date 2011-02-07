@@ -7,7 +7,7 @@
 #ifndef HardwareController_120718
 #define HardwareController_120718
 
-#include "../Common/LD130Common.h"
+#include "..\Intf\LD130Common.h"
 
 
 //-----------------------------------------------------------------------------------------

@@ -14,10 +14,11 @@
 
 struct TSendLogger
 {
-	TSendLogger(const char* pCmd, const TCommandErrorOutput& retCode, TSerialOnLogEvent pLogEvent)
+	TSendLogger(const char* pCmd, const TCommandErrorOutput& retCode, TSerialOnLogEvent pLogEvent, const void* anObject)
 		: m_cmd(pCmd)
 		, m_retCode(retCode)
 		, m_pLogEvent(pLogEvent)
+		, m_onLogObject(anObject)
 	{
 	}
 
@@ -28,14 +29,15 @@ struct TSendLogger
 		char str[1024] = {0};
 		_snprintf (str, sizeof(str), "%02d:%02d:%02d %03d %s: %s %s (%d)", sysTime.wHour,sysTime.wMinute,sysTime.wSecond,sysTime.wMilliseconds, m_cmd, m_retCode.m_errorId, (char*)m_retCode.m_errorDescription, m_retCode.m_invalidParameterIndex);
 		if (m_pLogEvent)
-			m_pLogEvent(m_cmd, str);
+			m_pLogEvent(m_onLogObject, m_cmd, str);
 	}
 
 private:
 	const char* 				m_cmd;
 	const TCommandErrorOutput&	m_retCode;
 
-	TSerialOnLogEvent m_pLogEvent;
+	TSerialOnLogEvent 	m_pLogEvent;
+	const void*			m_onLogObject;
 };
 
 bool TSerialConMan::m_bParserInitialized = false;
@@ -45,6 +47,7 @@ bool TSerialConMan::m_bParserInitialized = false;
 TSerialConMan::TSerialConMan()
 	: m_hComPort(0)
 	, m_pLogEvent(0)
+	, m_onLogObject(0)
 	, m_pParser(new tag_TCMDParser())
 {
 	m_overlappedOut.hEvent = CreateEvent(0, TRUE/*man reset event */, FALSE /* not signaled */, 0);
@@ -76,9 +79,10 @@ TSerialConMan::~TSerialConMan()
 	::CloseHandle(m_overlappedIn.hEvent);
 }
 //-----------------------------------------------------------------------------------------
-TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEvent pLogEvent)
+TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEvent pLogEvent, const void* anObject)
 {
 	m_pLogEvent = pLogEvent;
+	m_onLogObject = anObject;
 
 	::CloseHandle(m_hComPort);
 	char str[64] = {0};
@@ -146,7 +150,7 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 
 			if (bError) {
 				TCommandErrorOutput retCode;
-				TSendLogger theLogger("init", retCode, m_pLogEvent);
+				TSendLogger theLogger("init", retCode, m_pLogEvent, m_onLogObject);
 				if (!retCode.hasError()) {
 					strncpy(retCode.m_errorDescription, "Error initializing COM port", sizeof(retCode.m_errorDescription));
 					strncpy(retCode.m_errorId, "80000009", sizeof(retCode.m_errorId));
@@ -167,7 +171,7 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 
 
 			if (strcmp("version", GetCmdName()) != 0) {
-				TSendLogger theLogger("getver", retCode, m_pLogEvent);
+				TSendLogger theLogger("getver", retCode, m_pLogEvent, m_onLogObject);
 				strncpy(retCode.m_errorDescription, "unknow reply for get version", sizeof(retCode.m_errorDescription));
 				strncpy(retCode.m_errorId, "80000010", sizeof(retCode.m_errorId));
 				::CloseHandle(m_hComPort);
@@ -180,7 +184,7 @@ TCommandErrorOutput TSerialConMan::init(int aComPort, int aSpeed, TSerialOnLogEv
 	}
 
 	TCommandErrorOutput retCode;
-	TSendLogger theLogger("Open port", retCode, m_pLogEvent);
+	TSendLogger theLogger("Open port", retCode, m_pLogEvent, m_onLogObject);
 	strncpy(retCode.m_errorDescription, "COM port cannot be opened", sizeof(retCode.m_errorDescription));
 	strncpy(retCode.m_errorId, "80000011", sizeof(retCode.m_errorId));
 	return retCode;
@@ -206,7 +210,7 @@ TCommandErrorOutput TSerialConMan::send(const char* pCmd) const
 	TCommandErrorOutput retValue;
 
 	try{
-		TSendLogger theLogger(pCmd, retValue, m_pLogEvent);
+		TSendLogger theLogger(pCmd, retValue, m_pLogEvent, m_onLogObject);
 		DWORD theSizeToSend = (DWORD)strlen(pCmd);
 
 

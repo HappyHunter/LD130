@@ -14,7 +14,7 @@
 /*
 * NOT THREAD SAFE CLASS
 */
-typedef void (*TSerialOnLogEvent)(const char* pCmd, const char* pLogStr);
+typedef void (*TSerialOnLogEvent)(const void* anObject, const char* pCmd, const char* pLogStr);
 
 class TSerialConMan
 {
@@ -27,7 +27,7 @@ public:
 
 	TCommandErrorOutput send(const char* pCmd) const;
 
-	TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TSerialOnLogEvent pLogEvent = 0);
+	TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TSerialOnLogEvent pLogEvent = 0, const void* anObject=0);
 	void close();
 
 	const char * GetValueByName(const char * pName) const;
@@ -40,7 +40,8 @@ private:
 	mutable OVERLAPPED	m_overlappedOut;
 	mutable OVERLAPPED	m_overlappedIn;
 
-	TSerialOnLogEvent m_pLogEvent;
+	TSerialOnLogEvent 	m_pLogEvent;
+	const void*			m_onLogObject;
 
 	TCMDParser*	m_pParser;
 

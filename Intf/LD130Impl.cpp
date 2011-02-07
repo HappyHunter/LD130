@@ -18,6 +18,7 @@ TLD130Impl::TLD130Impl()
 	, m_sequenceIndex(0)
 	, m_cfgFlags(0)
 	, m_onLogEvent(0)
+	, m_onLogObject(0)
 {
 	#if UNDER_CE
 		::InitializeCriticalSection(&m_lock);
@@ -36,11 +37,12 @@ TLD130Impl::~TLD130Impl()
 }
 
 //-----------------------------------------------------------------------------------------
-TCommandErrorOutput TLD130Impl::init(int aComPort, int aSpeed,TLD130OnLogEvent onLogEvent)
+TCommandErrorOutput TLD130Impl::init(int aComPort, int aSpeed,TLD130OnLogEvent onLogEvent, const void* anObject)
 {
 	TCritical theLock(m_lock);
 
 	m_onLogEvent = onLogEvent;
+	m_onLogObject = anObject;
 	TCommandErrorOutput retCode = m_conMan.init(aComPort, aSpeed, onLogEvent);
 
 	m_verMajor.clear();

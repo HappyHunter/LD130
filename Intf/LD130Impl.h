@@ -11,7 +11,7 @@
 #include <string>
 using std::string;
 
-#include "../Common/LD130Common.h"
+#include "LD130Common.h"
 #include "SerialConnection.h"
 
 
@@ -26,7 +26,7 @@ public:
     TLD130Impl();
     ~TLD130Impl();
 
-    TCommandErrorOutput init(int aComPort, int aSpeed = 9600, TLD130OnLogEvent onLogEvent = 0);
+    TCommandErrorOutput init(int aComPort, int aSpeed = 115200, TLD130OnLogEvent onLogEvent = 0, const void* anObject = 0);
 
     void close();
 
@@ -85,7 +85,7 @@ public:
 
 
     string getSequence() { getBankSequenceImpl(); return m_sequence; }
-    TCommandErrorOutput TLD130Impl::setSequence(const string& aValue);
+    TCommandErrorOutput setSequence(const string& aValue);
 
     TLD130Status getStatus();
 private:
@@ -158,6 +158,7 @@ private:
      * used for logging  purpose
      */
     TLD130OnLogEvent 	m_onLogEvent;
+	const void*			m_onLogObject;
 
 
 	class  TCritical

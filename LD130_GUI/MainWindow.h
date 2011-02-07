@@ -329,7 +329,7 @@ private:	// User declarations
 
 	TLD130Impl	m_LD130;
 
-	static void OnLogEvent(const char* pCmd, const char* pLogStr);
+	static void OnLogEvent(const void* anObject, const char* pCmd, const char* pLogStr);
 
     bool m_head1PowerChanging;
     bool m_head2PowerChanging;
