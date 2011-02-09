@@ -45,7 +45,7 @@
 //-----------------------------------------------------------------------------------------
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 0
-#define VERSION_BUILD 1
+#define VERSION_BUILD 2
 
 //-----------------------------------------------------------------------------------------
 // the UART1 receiving buffer

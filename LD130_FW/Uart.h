@@ -31,6 +31,10 @@ extern OST_CSEM  Uart2_Msg;
 extern TUartBuff1 Uart1;
 extern TUartBuff2 Uart2;
 
+unsigned char UART1_Has_Error (void);
+unsigned char UART2_Has_Error (void);
+
+
 //#define UartDbg Uart2
 //
 //extern unsigned long Uart1_Baud_Rate;	// stored rate for UART 1

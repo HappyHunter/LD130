@@ -9,8 +9,12 @@
 #include "LD130Impl.h"
 #include <stdio.h>
 
-int ld130_min(int X1, int X2) { return  X1 < X2 ? X1 : X2; }
-int ld130_max(int X1, int X2) { return  X1 > X2 ? X1 : X2; }
+//int ld130_min(int X1, int X2) { return  X1 < X2 ? X1 : X2; }
+//int ld130_max(int X1, int X2) { return  X1 > X2 ? X1 : X2; }
+unsigned short ld130_min(unsigned short X1, unsigned short X2) { return  X1 < X2 ? X1 : X2; }
+unsigned short ld130_max(unsigned short X1, unsigned short X2) { return  X1 > X2 ? X1 : X2; }
+unsigned long ld130_min(unsigned long X1, unsigned long X2) { return  X1 < X2 ? X1 : X2; }
+unsigned long ld130_max(unsigned long X1, unsigned long X2) { return  X1 > X2 ? X1 : X2; }
 
 //-----------------------------------------------------------------------------------------
 TLD130Impl::TLD130Impl()

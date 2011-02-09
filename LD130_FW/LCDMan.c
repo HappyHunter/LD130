@@ -17,7 +17,7 @@
 
 int snprintf(char *, size_t, const char *, ...);
 
-#define NUM_OF_SCREENS 3
+#define NUM_OF_SCREENS 4
 
 static char TheScreens[NUM_OF_SCREENS][LCD_MAXROWS][LCD_MAXCOLS];
 //static char TheScreensChanged[NUM_OF_SCREENS];
@@ -53,6 +53,7 @@ static char TheScreens[NUM_OF_SCREENS][LCD_MAXROWS][LCD_MAXCOLS];
 void updateScreen1(unsigned short aCounter);
 void updateScreen2(unsigned short aCounter);
 void updateScreen3(unsigned short aCounter);
+void updateScreen4(unsigned short aCounter);
 
 
 //-----------------------------------------------------------------------------------------
@@ -91,6 +92,10 @@ void Task_LCDMan (void)
 
 	#if NUM_OF_SCREENS >= 4
 	setLcdText(3, 4, LCD_MAXCOLS-1, "4");
+	#endif
+
+	#if NUM_OF_SCREENS >= 5
+	setLcdText(3, 4, LCD_MAXCOLS-1, "5");
 	#endif
 
 
@@ -133,7 +138,7 @@ void Task_LCDMan (void)
 		}
 
 		// switch the active screen
-		if (theCounter > 200) {
+		if (theCounter > 150) {
 			theCounter = 0;
 
 			if (++activeScreen >= NUM_OF_SCREENS){
@@ -160,6 +165,10 @@ void Task_LCDMan (void)
 
 		case 2:
 			updateScreen3(theCounter>>4);
+			break;
+
+		case 3:
+			updateScreen4(theCounter>>4);
 			break;
 		}
 	}
@@ -341,7 +350,7 @@ void updateScreen1(unsigned short aCounter)
 	setLcdChar(0, 3, 3, buf[6]);
 	setLcdText(0, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter1());
-	setLcdText(0, 3, 11, buf);
+	setLcdText(0, 3, 11, &buf[2]);
 }
 
 
@@ -406,7 +415,7 @@ void updateScreen2(unsigned short aCounter)
 	setLcdChar(1, 3, 3, buf[6]);
 	setLcdText(1, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter2());
-	setLcdText(1, 3, 11, buf);
+	setLcdText(1, 3, 11, &buf[2]);
 }
 
 //-----------------------------------------------------------------------------------------
@@ -427,7 +436,9 @@ void updateScreen3(unsigned short aCounter)
 	getTemperatureAsString(buf, sizeof(buf) / sizeof(buf[0]), getTemperatureH2());
 	setLcdText(2, 1, 16, buf);
 
-	setLcdText(2, 2, 0, "NO ERROR");
+
+	setLcdText(2, 2, 0, "ERR:");
+	setLcdText(2, 2, 4, getErrorStatus());
 
 	setLcdText(2, 3, 0, "Ver:");
 	setLcdChar(2, 3, 4, VERSION_MAJOR+'0');
@@ -436,6 +447,21 @@ void updateScreen3(unsigned short aCounter)
 	setLcdChar(2, 3, 7, '.');
 	setLcdChar(2, 3, 8, VERSION_BUILD+'0');
 }
+
+//-----------------------------------------------------------------------------------------
+void updateScreen4(unsigned short aCounter)
+{
+	char buf[12];
+	setLcdText(3, 2, 0, "MC");
+	getIntAsString(buf, getMissingTriggerCounter1());
+	setLcdText(3, 2, 3 , &buf[1]);
+
+	setLcdText(3, 3, 0, "MC");
+	getIntAsString(buf, getMissingTriggerCounter2());
+	setLcdText(3, 3, 3 , &buf[1]);
+}
+
+
 
 
 

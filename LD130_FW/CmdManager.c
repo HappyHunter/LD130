@@ -385,14 +385,14 @@ void setHeadData()
 	}
 
 	pValue = GetValueByName(&theParser, "strobeDelay");		// the delay of outcoming light strobe in microseconds
-	theHeadData.m_strobeDelay = atoi(pValue);
+	theHeadData.m_strobeDelay = atol(pValue);
 	if (!IsValidInteger(pValue) || theHeadData.m_strobeDelay > 0x7FFFFFFF) {
 		outputErrorString_UART1(10);
 		return ;
 	}
 
 	pValue = GetValueByName(&theParser, "strobeWidth");		// the duration of outcoming light strobe in microseconds
-	theHeadData.m_strobeWidth = atoi(pValue);
+	theHeadData.m_strobeWidth = atol(pValue);
 	if (!IsValidInteger(pValue) || theHeadData.m_strobeWidth > 0x7FFFFFFF) {
 		outputErrorString_UART1(11);
 		return ;
@@ -615,14 +615,14 @@ void setBankData()
 	}
 
 	pValue = GetValueByName(&theParser, "strobeWidth");		// the duration of outcoming light strobe in microseconds
-	theHeadData.m_strobeWidth = atoi(pValue);
+	theHeadData.m_strobeWidth = atol(pValue);
 	if (!IsValidInteger(pValue) || theHeadData.m_strobeWidth > 0x7FFFFFFF) {
 		outputErrorString_UART1(11);
 		return ;
 	}
 
 	pValue = GetValueByName(&theParser, "triggerEdge");		// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
-	theHeadData.m_triggerEdge = atoi(pValue);
+	theHeadData.m_triggerEdge = atol(pValue);
 	if (!IsValidInteger(pValue) || theHeadData.m_triggerEdge > 2) {
 		outputErrorString_UART1(7);
 		return ;

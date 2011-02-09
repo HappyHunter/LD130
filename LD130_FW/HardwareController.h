@@ -167,7 +167,7 @@ TBankInfo* getBankInfo(unsigned short aBankId);
 /**
 * returns the status of the head after programming
 */
-THeadStatus* getHeadStatus(unsigned char anOutputId);
+volatile THeadStatus* getHeadStatus(unsigned char anOutputId);
 
 
 
@@ -180,6 +180,17 @@ THeadStatus* getHeadStatus(unsigned char anOutputId);
  */
 unsigned long getTriggerCounter1();
 unsigned long getTriggerCounter2();
+
+/**
+ * Returns the counter for the mmissing trigger. Every time we
+ * trigger the controller during the period while it is still doing
+ * the previous trigger we will increment the counter. This is
+ * just for displaying and statistics purpose
+ *
+ * @return unsigned long
+ */
+unsigned long getMissingTriggerCounter1();
+unsigned long getMissingTriggerCounter2();
 
 
 /**

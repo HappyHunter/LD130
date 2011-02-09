@@ -161,16 +161,17 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 		// now start reading the data from UART
 		do {
-			//**********************************************************************************************************************************************
-			// Debug LED blinking
-			//**********************************************************************************************************************************************
-			_LATD4 = !_LATD4;
-
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {
 				static char ch;
 				ch = U1RXREG;
+
+				if (U1STAbits.FERR || U1STAbits.PERR) {
+					U1STAbits.FERR = 0;
+					U1STAbits.PERR = 0;
+					continue;
+				}
 
 				// read the character from FIFO
 				Uart1.m_RXBuffer[Uart1.m_RXTail] = ch;
@@ -205,9 +206,15 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 		} while(U1STAbits.URXDA);
 	}
 
-	U1STAbits.OERR = 0;
-	U1STAbits.FERR = 0;
-	U1STAbits.PERR = 0;
+	if (U1STAbits.OERR != 0 || U1STAbits.FERR != 0 || U1STAbits.PERR != 0) {
+		U1MODEbits.UARTEN = 0;          // disable UART 1
+		Nop();							// this will reset any errors pending
+		Nop();
+		Nop();
+		Nop();
+		U1MODEbits.UARTEN = 1;          // Enable UART 1
+	}
+
 
 	_U1RXIF = 0;
 }
@@ -406,6 +413,12 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 				static char ch;
 				ch = U2RXREG;
 
+				if (U2STAbits.FERR || U2STAbits.PERR) {
+					U2STAbits.FERR = 0;
+					U2STAbits.PERR = 0;
+					continue;
+				}
+
 				// read the character from FIFO
 				Uart2.m_RXBuffer[Uart2.m_RXTail] = ch;
 
@@ -430,6 +443,15 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 			}
 
 		} while(U2STAbits.URXDA);
+	}
+
+	if (U2STAbits.OERR != 0 || U2STAbits.FERR != 0 || U2STAbits.PERR != 0) {
+		U2MODEbits.UARTEN = 0;          // disable UART 2
+		Nop();							// this will reset any errors pending
+		Nop();
+		Nop();
+		Nop();
+		U2MODEbits.UARTEN = 1;          // Enable UART 2
 	}
 	_U2RXIF = 0;
 }
@@ -681,5 +703,20 @@ void outputFloatAsString(int aPort, double aValue)
 	else
 		outputString_UART2(pCh);
 }
+
+unsigned char UART1_Has_Error (void)
+{
+	if (U1STAbits.FERR || U1STAbits.PERR)
+		return 1;
+	return 0;
+}
+
+unsigned char UART2_Has_Error (void)
+{
+	if (U2STAbits.FERR || U2STAbits.PERR)
+		return 1;
+	return 0;
+}
+
 
 

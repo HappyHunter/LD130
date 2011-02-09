@@ -12,6 +12,7 @@
 #include "MCP23S17.h"
 #include "SPI.h"
 #include "LCDMan.h"
+#include "HardwareController.h"
 
 #define FILTER_SIZE 5
 static float theTemperatureH1[FILTER_SIZE];
@@ -186,5 +187,46 @@ float getTemperatureAmb()
 		fVal += theTemperatureAmb[iReading];
 	}
 	return fVal/(sizeof(theTemperatureAmb)/sizeof(theTemperatureAmb[0]));
+}
+
+
+/**
+ * Returns the status string for any errors happening
+*/
+//-----------------------------------------------------------------------------------------
+const char* getErrorStatus()
+{
+	static char buf[11];
+	buf[sizeof(buf)-1] = 0;
+
+	// UART 1 status error codes
+	buf[9] = '0';
+	if (U1STAbits.FERR)			buf[9] += 1;
+	if (U1STAbits.PERR) 		buf[9] += 2;
+	if (U1STAbits.OERR)			buf[9] += 4;
+	if (U1MODEbits.UARTEN==0)	buf[9] += 8;
+
+
+	// UART 2 status error codes
+	buf[8] = '0';
+	if (U2STAbits.FERR)			buf[8] += 1;
+	if (U2STAbits.PERR) 		buf[8] += 2;
+	if (U2STAbits.OERR)			buf[8] += 4;
+	if (U1MODEbits.UARTEN==0)	buf[8] += 8;
+
+	// indication that there is a missing trigger 1
+	buf[7] = '0' + getMissingTriggerCounter1() % 10;
+
+	// indication that there is a missing trigger 2
+	buf[6] = '0' + getMissingTriggerCounter2() %10;
+
+	buf[5] = '0';
+	buf[4] = '0';
+	buf[3] = '0';
+	buf[2] = '0';
+	buf[1] = '0';
+	buf[0] = '0';
+
+	return buf;
 }
 
