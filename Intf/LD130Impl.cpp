@@ -98,7 +98,7 @@ void TLD130Impl::readFromController()
 	getConfigDataImpl();
 
 	for (int i = 0; i < sizeof(m_bankData)/sizeof(m_bankData[0]); ++i) {
-		getBankDataImpl(i);
+		getBankDataImpl(i+1);
 	}
 
 	getBankSequenceImpl();
@@ -127,8 +127,10 @@ void TLD130Impl::getConfigDataImpl()
 //---------------------------------------------------------------------------
 void TLD130Impl::getBankDataImpl(unsigned short aBankId)
 {
+
 	TCritical theLock(m_lock);
   	char cmdBuf[1024] = {0};
+	aBankId 	 = ld130_min(ld130_max(aBankId,		1), 	MAX_NUM_OF_BANKS);	// 1,2,3,4
 
 	//-----------------------------------------
 	// Head 1
@@ -139,18 +141,18 @@ void TLD130Impl::getBankDataImpl(unsigned short aBankId)
 	// "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 	TCommandErrorOutput retCode = m_conMan.send(cmdBuf);
 	if (!retCode.hasError()) {
-		m_bankData[aBankId].m_headData[0].m_bankId		= atoi(m_conMan.GetValueByName("bankId"));		// 1, 2, 3, 4
-		m_bankData[aBankId].m_headData[0].m_outputId	= atoi(m_conMan.GetValueByName("outputId"));		// 1 - head 1, 2 - Head 2
-		m_bankData[aBankId].m_headData[0].m_voltage		= atoi(m_conMan.GetValueByName("voltage"));		// 0 - 100 Volts
-		m_bankData[aBankId].m_headData[0].m_powerChanel1= atoi(m_conMan.GetValueByName("powerChanel1")); // 0 - 100 00% with fixed decimal point at 2 digits
-		m_bankData[aBankId].m_headData[0].m_powerChanel2= atoi(m_conMan.GetValueByName("powerChanel2")); // for example the power of 35.23% will be sent as 3523
-		m_bankData[aBankId].m_headData[0].m_powerChanel3= atoi(m_conMan.GetValueByName("powerChanel3")); // the power of 99.00% will be sent as 9900
-		m_bankData[aBankId].m_headData[0].m_powerChanel4= atoi(m_conMan.GetValueByName("powerChanel4")); // the power of 100.00% will be sent as 10000
-		m_bankData[aBankId].m_headData[0].m_strobeDelay	= atoi(m_conMan.GetValueByName("strobeDelay"));	// the delay of outcoming light strobe in microseconds
-		m_bankData[aBankId].m_headData[0].m_strobeWidth	= atoi(m_conMan.GetValueByName("strobeWidth"));	// the duration of outcoming light strobe in microseconds
-		m_bankData[aBankId].m_headData[0].m_triggerEdge	= atoi(m_conMan.GetValueByName("triggerEdge"));	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
-		m_bankData[aBankId].m_headData[0].m_triggerId	= atoi(m_conMan.GetValueByName("triggerId"));	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-		m_bankData[aBankId].m_headData[0].m_chanelAmplifier= atoi(m_conMan.GetValueByName("chanelAmplifier"));	 // the amplification value 1-5
+		m_bankData[aBankId-1].m_headData[0].m_bankId		= atoi(m_conMan.GetValueByName("bankId"));		// 1, 2, 3, 4
+		m_bankData[aBankId-1].m_headData[0].m_outputId	= atoi(m_conMan.GetValueByName("outputId"));		// 1 - head 1, 2 - Head 2
+		m_bankData[aBankId-1].m_headData[0].m_voltage		= atoi(m_conMan.GetValueByName("voltage"));		// 0 - 100 Volts
+		m_bankData[aBankId-1].m_headData[0].m_powerChanel1= atoi(m_conMan.GetValueByName("powerChanel1")); // 0 - 100 00% with fixed decimal point at 2 digits
+		m_bankData[aBankId-1].m_headData[0].m_powerChanel2= atoi(m_conMan.GetValueByName("powerChanel2")); // for example the power of 35.23% will be sent as 3523
+		m_bankData[aBankId-1].m_headData[0].m_powerChanel3= atoi(m_conMan.GetValueByName("powerChanel3")); // the power of 99.00% will be sent as 9900
+		m_bankData[aBankId-1].m_headData[0].m_powerChanel4= atoi(m_conMan.GetValueByName("powerChanel4")); // the power of 100.00% will be sent as 10000
+		m_bankData[aBankId-1].m_headData[0].m_strobeDelay	= atol(m_conMan.GetValueByName("strobeDelay"));	// the delay of outcoming light strobe in microseconds
+		m_bankData[aBankId-1].m_headData[0].m_strobeWidth	= atol(m_conMan.GetValueByName("strobeWidth"));	// the duration of outcoming light strobe in microseconds
+		m_bankData[aBankId-1].m_headData[0].m_triggerEdge	= atoi(m_conMan.GetValueByName("triggerEdge"));	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+		m_bankData[aBankId-1].m_headData[0].m_triggerId	= atoi(m_conMan.GetValueByName("triggerId"));	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+		m_bankData[aBankId-1].m_headData[0].m_chanelAmplifier= atoi(m_conMan.GetValueByName("chanelAmplifier"));	 // the amplification value 1-5
 
 	}
 
@@ -163,18 +165,18 @@ void TLD130Impl::getBankDataImpl(unsigned short aBankId)
 	// "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 	retCode = m_conMan.send(cmdBuf);
 	if (!retCode.hasError()) {
-		m_bankData[aBankId].m_headData[1].m_bankId		= atoi(m_conMan.GetValueByName("bankId"));		// 1, 2, 3, 4
-		m_bankData[aBankId].m_headData[1].m_outputId	= atoi(m_conMan.GetValueByName("outputId"));		// 1 - head 1, 2 - Head 2
-		m_bankData[aBankId].m_headData[1].m_voltage		= atoi(m_conMan.GetValueByName("voltage"));		// 0 - 100 Volts
-		m_bankData[aBankId].m_headData[1].m_powerChanel1= atoi(m_conMan.GetValueByName("powerChanel1")); // 0 - 100 00% with fixed decimal point at 2 digits
-		m_bankData[aBankId].m_headData[1].m_powerChanel2= atoi(m_conMan.GetValueByName("powerChanel2")); // for example the power of 35.23% will be sent as 3523
-		m_bankData[aBankId].m_headData[1].m_powerChanel3= atoi(m_conMan.GetValueByName("powerChanel3")); // the power of 99.00% will be sent as 9900
-		m_bankData[aBankId].m_headData[1].m_powerChanel4= atoi(m_conMan.GetValueByName("powerChanel4")); // the power of 100.00% will be sent as 10000
-		m_bankData[aBankId].m_headData[1].m_strobeDelay	= atoi(m_conMan.GetValueByName("strobeDelay"));	// the delay of outcoming light strobe in microseconds
-		m_bankData[aBankId].m_headData[1].m_strobeWidth	= atoi(m_conMan.GetValueByName("strobeWidth"));	// the duration of outcoming light strobe in microseconds
-		m_bankData[aBankId].m_headData[1].m_triggerEdge	= atoi(m_conMan.GetValueByName("triggerEdge"));	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
-		m_bankData[aBankId].m_headData[1].m_triggerId	= atoi(m_conMan.GetValueByName("triggerId"));	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
-		m_bankData[aBankId].m_headData[1].m_chanelAmplifier= atoi(m_conMan.GetValueByName("chanelAmplifier"));	 // the amplification value 1-5
+		m_bankData[aBankId-1].m_headData[1].m_bankId		= atoi(m_conMan.GetValueByName("bankId"));		// 1, 2, 3, 4
+		m_bankData[aBankId-1].m_headData[1].m_outputId	= atoi(m_conMan.GetValueByName("outputId"));		// 1 - head 1, 2 - Head 2
+		m_bankData[aBankId-1].m_headData[1].m_voltage		= atoi(m_conMan.GetValueByName("voltage"));		// 0 - 100 Volts
+		m_bankData[aBankId-1].m_headData[1].m_powerChanel1= atoi(m_conMan.GetValueByName("powerChanel1")); // 0 - 100 00% with fixed decimal point at 2 digits
+		m_bankData[aBankId-1].m_headData[1].m_powerChanel2= atoi(m_conMan.GetValueByName("powerChanel2")); // for example the power of 35.23% will be sent as 3523
+		m_bankData[aBankId-1].m_headData[1].m_powerChanel3= atoi(m_conMan.GetValueByName("powerChanel3")); // the power of 99.00% will be sent as 9900
+		m_bankData[aBankId-1].m_headData[1].m_powerChanel4= atoi(m_conMan.GetValueByName("powerChanel4")); // the power of 100.00% will be sent as 10000
+		m_bankData[aBankId-1].m_headData[1].m_strobeDelay	= atol(m_conMan.GetValueByName("strobeDelay"));	// the delay of outcoming light strobe in microseconds
+		m_bankData[aBankId-1].m_headData[1].m_strobeWidth	= atol(m_conMan.GetValueByName("strobeWidth"));	// the duration of outcoming light strobe in microseconds
+		m_bankData[aBankId-1].m_headData[1].m_triggerEdge	= atoi(m_conMan.GetValueByName("triggerEdge"));	// the edge of incoming trigger to start counting, 0 - raising, 1 - falling, 2 - DC mode
+		m_bankData[aBankId-1].m_headData[1].m_triggerId	= atoi(m_conMan.GetValueByName("triggerId"));	// the ID of the trigger this output head will trigger on. 1 - Trigger 1, 2 - Trigger 2, 3 - Trigger 1 or 2
+		m_bankData[aBankId-1].m_headData[1].m_chanelAmplifier= atoi(m_conMan.GetValueByName("chanelAmplifier"));	 // the amplification value 1-5
 	}
 
 }

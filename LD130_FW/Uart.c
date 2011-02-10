@@ -32,7 +32,7 @@ OST_CSEM  Uart1_Msg;
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Start_UART1                                                 *
+ *  Function:       ReStart_UART1                                                 *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -45,13 +45,9 @@ OST_CSEM  Uart1_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Start_UART1 (void)
+void ReStart_UART1 (void)
 {
 	static unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
-
-	// create a semaphore
-	OS_Csem_Create(Uart1_Msg);
-
 
 	//-----------------------------------------------------------------------------------------
 	// Initializes UART 1 with:
@@ -144,6 +140,29 @@ void Start_UART1 (void)
 }
 
 
+/********************************************************************************
+ *                                                                              *
+ *  Function:       Start_UART1                                                 *
+ *                                                                              *
+ *------------------------------------------------------------------------------*
+ *                                                                              *
+ *  description:    Initialize the semaphore and then starts hardware for UART 1*
+ *  																			*
+ *  parameters:     void                                                        *
+ *                                                                              *
+ *  on return:      void                                                        *
+ *                                                                              *
+ *                                                                              *
+ ********************************************************************************/
+void Start_UART1 (void)
+{
+	// create a semaphore
+	OS_Csem_Create(Uart1_Msg);
+
+	ReStart_UART1();
+}
+
+
 //-----------------------------------------------------------------------------------------
 // Here is our lovely interrupt function on character receive - the name is important.
 //
@@ -212,7 +231,8 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 		Nop();
 		Nop();
 		Nop();
-		U1MODEbits.UARTEN = 1;          // Enable UART 1
+		U1MODEbits.UARTEN = 1;      // Enable UART 1
+		U1STAbits.UTXEN = 1;        // enable TX function, should be after U1_UARTEN
 	}
 
 
@@ -283,7 +303,7 @@ OST_CSEM  Uart2_Msg;
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Start_UART2                                                  *
+ *  Function:       ReStart_UART2                                                  *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -296,12 +316,9 @@ OST_CSEM  Uart2_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Start_UART2 (void)
+void ReStart_UART2 (void)
 {
 	static unsigned long Uart2_Baud_Rate;	// stored rate for UART 1
-
-	OS_Csem_Create(Uart2_Msg);
-
 
 	//-----------------------------------------------------------------------------------------
 	// Initializes UART 1 with:
@@ -390,6 +407,27 @@ void Start_UART2 (void)
 }
 
 
+/********************************************************************************
+ *                                                                              *
+ *  Function:       Start_UART2                                                  *
+ *                                                                              *
+ *------------------------------------------------------------------------------*
+ *                                                                              *
+ *  description:    Initialize the semaphore and then starts hardware for UART 2*
+ *  																			*
+ *  parameters:     void                                                        *
+ *                                                                              *
+ *  on return:      void                                                        *
+ *                                                                              *
+ *                                                                              *
+ ********************************************************************************/
+void Start_UART2 (void)
+{
+	OS_Csem_Create(Uart2_Msg);
+
+	ReStart_UART2();
+}
+
 //-----------------------------------------------------------------------------------------
 // Here is our lovely interrupt function on character receive - the name is important.
 //
@@ -452,6 +490,7 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 		Nop();
 		Nop();
 		U2MODEbits.UARTEN = 1;          // Enable UART 2
+		U2STAbits.UTXEN = 1;        	// enable TX function, should be after U2_UARTEN
 	}
 	_U2RXIF = 0;
 }

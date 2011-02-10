@@ -1733,7 +1733,7 @@ object FormMainWindow: TFormMainWindow
     end
   end
   object TimerUpdate: TTimer
-    Interval = 200
+    Interval = 400
     OnTimer = TimerUpdateTimer
     Left = 504
   end

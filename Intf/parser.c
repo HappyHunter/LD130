@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////
 //
-// 	Alexandr Filenkov 2010
+// 	Alexandr Filenkov 2011
 //
 ////////////////////////////////////////////////////////////////////
 #include "parser.h"
@@ -72,7 +72,7 @@ const char * const CmdTemplates[PATTERNS_COUNT] __attribute__ ((space(auto_psv))
 
 //  unsigned short	m_bankId;		// 1, 2, 3, 4
 //  unsigned short	m_outputId;		// 1 - head 1, 2 - Head 2
-    "getbankdata,bankId,headId",
+    "getbankdata,bankId,outputId",
     "bankdata,bankId,outputId,voltage,powerChanel1,powerChanel2,powerChanel3,powerChanel4,strobeDelay,strobeWidth,triggerEdge,triggerId,chanelAmplifier",
 
     "getcfgdata",

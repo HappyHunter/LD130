@@ -12,6 +12,10 @@
 void Start_UART1 (void);
 void Start_UART2 (void);
 
+void ReStart_UART1 (void);
+void ReStart_UART2 (void);
+
+
 void outputChar_UART1(char ch);
 void outputString_UART1(const char* pCh);
 void outputIntAsHexString_UART1(unsigned long aValue);

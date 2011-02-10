@@ -22,6 +22,9 @@ static float theTemperatureAmb[FILTER_SIZE];
 static unsigned short theGPIOHead1 = 0;
 static unsigned short theGPIOHead2 = 0;
 
+static unsigned short theUART1Disabled = 0;
+static unsigned short theUART2Disabled = 0;
+
 /**
  * SPI_Chip_Select_1 - GPIO 1
  * SPI_Chip_Select_2 - GPIO 2
@@ -151,6 +154,19 @@ void Task_Monitoring()
 		#endif
 
 		OS_Delay(50);
+
+		// in case if UART1 got disabled for long time
+		if (U1MODEbits.UARTEN)
+			theUART1Disabled = 0;
+		else if (++theUART1Disabled > 10)
+			ReStart_UART1();
+
+		// in case if UART1 got disabled for long time
+		if (U2MODEbits.UARTEN)
+			theUART2Disabled = 0;
+		else if (++theUART2Disabled > 10)
+			ReStart_UART2();
+
 	}
 }
 

@@ -14,6 +14,9 @@
 #define VOUT_ONA _LATB11
 #define VOUT_ONB _LATB12
 
+
+//#define LOG_SETTING_VALUES
+
 /**
  * This function calculates the DAC current value to be
  * programmed to LTC1660 DAC
@@ -102,7 +105,9 @@ unsigned short makeVoltageDACValue_LTC1329(unsigned long aPower)
 short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, unsigned short aValue)
 {
 	unsigned short workingChanelBin = 0x1000;
+	#ifdef LOG_SETTING_VALUES
 	unsigned short originalValue = aValue;
+	#endif
 
 	switch (aChanel) {
 		case 1:
@@ -148,6 +153,7 @@ short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, uns
 	aValue = workingChanelBin | aValue;
 
 
+	#ifdef LOG_SETTING_VALUES
 	DbgOut("setCurrentDACValue_LTC1660(");
 	DbgOutInt(aChip);
 	DbgOut(",");
@@ -157,6 +163,7 @@ short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, uns
 	DbgOut(" {");
 	DbgOutInt(originalValue);
 	DbgOut("})\r\n");
+	#endif
 
 	// select slave device
 	initSPI1(1/*1 = 16 bit ON*/, 1 /*CKE*/, 0/*CKP*/);
@@ -185,11 +192,13 @@ short setCurrentDACValue_LTC1660(unsigned char aChip, unsigned char aChanel, uns
 //-----------------------------------------------------------------------------------------
 short setVoltageDACValue_LTC1329(unsigned char aChip, unsigned short aValue)
 {
+	#ifdef LOG_SETTING_VALUES
 	DbgOut("setVoltageDACValue_LTC1329(");
 	DbgOutInt(aChip);
 	DbgOut(",");
 	DbgOutInt(aValue);
 	DbgOut(")\r\n");
+	#endif
 
 	initSPI1(1/*1 = 16 bit ON*/, 1 /*CKE*/, 0/*CKP*/);
 	// select slave device

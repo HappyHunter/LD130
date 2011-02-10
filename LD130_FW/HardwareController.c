@@ -19,7 +19,7 @@
 // devine this one to print into COM2 the debug info about the parameters for
 // the triggrt timing
 //#define TRIG_TIMING_DEBUG_OUT
-#define TRIG_TIMING_DEBUG_OUT_T1
+//#define TRIG_TIMING_DEBUG_OUT_T1
 //#define TRIG_TIMING_DEBUG_OUT_IN
 
 //-----------------------------------------------------------------------------------------
@@ -438,44 +438,53 @@ void initTrigger2()
  * Program the hardware with the bank info supplied
 */
 //-----------------------------------------------------------------------------------------
-void programBank(TBankInfo* pBankInfo)
+void programBank(TBankInfo* aBankInfo)
 {
 	static unsigned char old_Trig1_IN_Enabled;
 	static unsigned char old_Trig2_IN_Enabled;
-	unsigned short period;
-	unsigned char bOnce = 0;
+	static unsigned short period = 0;
+	static unsigned char  yield = 0;
+	static TBankInfo*     pBankInfo = 0;
 
 	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
 	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
+	pBankInfo = aBankInfo;
+
+	// wait until the trigger timers OFF
+	period = 0;
+	yield = 0;
+	while (T2CONbits.TON || T3CONbits.TON || TRIG_OUTA_PIC || TRIG_OUTB_PIC || (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) != 0 || (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) != 0) {
+
+		ClrWdt();
+
+		if (++period > 10000) {
+			if (T2CONbits.TON)
+				DbgOut("T2CONbits.TON=ON\r\n");
+
+			if (T3CONbits.TON)
+				DbgOut("T3CONbits.TON=ON\r\n");
+
+			if (TRIG_OUTA_PIC)
+				DbgOut("TRIG_OUTA_PIC=ON\r\n");
+
+			if (TRIG_OUTB_PIC)
+				DbgOut("TRIG_OUTB_PIC=ON\r\n");
+
+			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) != 0){
+				DbgOut("[HEAD1_IDX].m_flags=tfTriggerON\r\n");
+			}
+			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) != 0){
+				DbgOut("[HEAD2_IDX].m_flags=tfTriggerON\r\n");
+			}
+
+			period = 0;
+		}
+	}
 
 	// Disable trigger inputs temporarily, will be restored later
 	Trig1_IN_Enabled = 0;
 	Trig2_IN_Enabled = 0;
 
-
-	// wait until the trigger timers OFF
-	period = 0;
-	while (T2CONbits.TON || T3CONbits.TON || TRIG_OUTA_PIC || TRIG_OUTB_PIC || (TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) != 0 || (TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) != 0) {
-
-		ClrWdt();
-		if (++period == 0 && bOnce == 0) {
-			if (T2CONbits.TON)
-				DbgOut("T2CONbits.TON=ON\r\n");
-			if (T3CONbits.TON)
-				DbgOut("T3CONbits.TON=ON\r\n");
-			if (TRIG_OUTA_PIC)
-				DbgOut("TRIG_OUTA_PIC=ON\r\n");
-			if (TRIG_OUTB_PIC)
-				DbgOut("TRIG_OUTB_PIC=ON\r\n");
-			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON))
-				DbgOut("TheDelayInfoWorking[HEAD1_IDX].m_flags=tfTriggerON\r\n");
-			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON))
-				DbgOut("TheDelayInfoWorking[HEAD2_IDX].m_flags=tfTriggerON\r\n");
-
-			bOnce = 0;
-
-		}
-	}
 
 	#if 0
 	int iii;
