@@ -129,10 +129,10 @@ static volatile unsigned char Trig1_IN_Enabled;		// The flag that enables trig I
 static volatile unsigned char Trig1_IN_Last;		// the initail state of trig1
 
 static volatile unsigned char Trig1_Timer2_Enabled; // if we need to start timer 2 when we receive trigger 1
-static volatile unsigned char Trig1_Timer2_Edge;	// on which edge to trigger the timer
+//static volatile unsigned char Trig1_Timer2_Edge;	// on which edge to trigger the timer
 
 static volatile unsigned char Trig1_Timer3_Enabled;	// if we need to start timer 3 when we receive trigger 1
-static volatile unsigned char Trig1_Timer3_Edge;	// on which edge to start the timer
+//static volatile unsigned char Trig1_Timer3_Edge;	// on which edge to start the timer
 
 
 //-----------------------------------------------------------------------------------------
@@ -144,10 +144,10 @@ static volatile unsigned char Trig2_IN_Enabled;		// The flag that enables trig I
 static volatile unsigned char Trig2_IN_Last;
 
 static volatile unsigned char Trig2_Timer2_Enabled; // if we need to start timer 2 when we receive trigger 2
-static volatile unsigned char Trig2_Timer2_Edge;	// on which edge to trigger the timer
+//static volatile unsigned char Trig2_Timer2_Edge;	// on which edge to trigger the timer
 
 static volatile unsigned char Trig2_Timer3_Enabled;	// if we need to start timer 3 when we receive trigger 2
-static volatile unsigned char Trig2_Timer3_Edge;	// on which edge to start the timer
+//static volatile unsigned char Trig2_Timer3_Edge;	// on which edge to start the timer
 
 
 static volatile unsigned char AdvanceToTheNextBank = 1;	// flag that is set when we nned to advance to the next bank
@@ -229,6 +229,21 @@ static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long 
  */
 #define AC_DC_H1			_LATF0
 #define AC_DC_H2			_LATF1
+
+
+
+/**
+ * The trigger edge selection. The signal is sent to CPLD to
+ * perform the edge detection.
+ *
+ * 0 - Raising Edge
+ * 1 - Falling Edge
+ */
+#define TRIGGER1_EDGE_TRIS	_TRISE5
+#define TRIGGER1_EDGE		_LATE5
+
+#define TRIGGER2_EDGE_TRIS	_TRISE6
+#define TRIGGER2_EDGE		_LATE6
 
 /**
  * stops execution by the delay specified
@@ -383,10 +398,10 @@ void initTrigger1()
 	_CNIE = 1;				// global enable interrupts on pin change
 
 	Trig1_Timer2_Enabled = 0; 	// if we need to start timer 2 when we receive trigger 1
-	Trig1_Timer2_Edge = 0;		// on which edge to trigger the timer
+//	Trig1_Timer2_Edge = 0;		// on which edge to trigger the timer
 
 	Trig1_Timer3_Enabled = 0;	// if we need to start timer 3 when we receive trigger 1
-	Trig1_Timer3_Edge = 0;		// on which edge to start the timer
+//	Trig1_Timer3_Edge = 0;		// on which edge to start the timer
 
 	//Setup trigger 1 output (pin: TRIG_OUTA_PIC)
 	TRIG_OUTA_PIC_TRIS = 0;	// set the port as output
@@ -395,6 +410,9 @@ void initTrigger1()
 	T2CONbits.TON = 0;		// disable the timer 2
 
 	//AdvanceToTheNextBank = 0; //TODO check needed?
+
+	TRIGGER1_EDGE = 0;  	// program the trigger edge selection as output
+	TRIGGER1_EDGE_TRIS = 0;
 
 	Trig1_IN_Enabled = 1;	// trigger 1 input is now enabled
 
@@ -417,16 +435,19 @@ void initTrigger2()
 	_CNIE = 1;				// global enable interrupts on pin change
 
 	Trig2_Timer2_Enabled = 0; 	// if we need to start timer 2 when we receive trigger 2
-	Trig2_Timer2_Edge = 0;		// on which edge to trigger the timer
+//	Trig2_Timer2_Edge = 0;		// on which edge to trigger the timer
 
 	Trig2_Timer3_Enabled = 0;	// if we need to start timer 3 when we receive trigger 2
-	Trig2_Timer3_Edge = 0;		// on which edge to start the timer
+//	Trig2_Timer3_Edge = 0;		// on which edge to start the timer
 
 	//Setup trigger 2 output (pin: TRIG_OUTB_PIC)
 	TRIG_OUTB_PIC_TRIS = 0;	// set the port as output
 	TRIG_OUTB_PIC = 0;		// clear latched trigger 2 output data
 
 	T3CONbits.TON = 0;		// disable the timer 3
+
+	TRIGGER2_EDGE = 0;  	// program the trigger edge selection as output
+	TRIGGER2_EDGE_TRIS = 0;
 
 	Trig2_IN_Enabled = 1;	// the trigger 2 input is now enabled
 
@@ -558,23 +579,23 @@ void programBank(TBankInfo* aBankInfo)
 	// output head 1 is always attached to timer 2
 	// so check if we need to trigger it on TriggerID1
 	Trig1_Timer2_Enabled = (pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID1) && pBankInfo->m_output[HEAD1_IDX].m_strobeWidth != 0;
-	Trig1_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	TRIGGER1_EDGE    	  = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 0 : 1;		// the status of the pin when we should fire the timer
 
 	// output head 2 always attached to timer 3
 	// so check if we need to trigger it on TriggerID1
 	Trig1_Timer3_Enabled = (pBankInfo->m_output[HEAD2_IDX].m_triggerId & TriggerID1) && pBankInfo->m_output[HEAD2_IDX].m_strobeWidth != 0;
-	Trig1_Timer3_Edge    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	TRIGGER2_EDGE    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 0 : 1;		// the status of the pin when we should fire the timer
 
 
 	// output head 1 is always attached to timer 2
 	// so check if we need to trigger it on TriggerID2 this time
 	Trig2_Timer2_Enabled = (pBankInfo->m_output[HEAD1_IDX].m_triggerId & TriggerID2) && pBankInfo->m_output[HEAD1_IDX].m_strobeWidth != 0;
-	Trig2_Timer2_Edge    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	TRIGGER1_EDGE    = pBankInfo->m_output[HEAD1_IDX].m_triggerEdge == TriggerRaising ? 0 : 1;		// the status of the pin when we should fire the timer
 
 	// output head 2 is always attached to timer 3
 	// so check if we need to trigger it on TriggerID2 this time
 	Trig2_Timer3_Enabled = (pBankInfo->m_output[HEAD2_IDX].m_triggerId & TriggerID2) && pBankInfo->m_output[HEAD2_IDX].m_strobeWidth != 0;
-	Trig2_Timer3_Edge    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 1 : 0;		// the status of the pin when we should fire the timer
+	TRIGGER2_EDGE    = pBankInfo->m_output[HEAD2_IDX].m_triggerEdge == TriggerRaising ? 0 : 1;		// the status of the pin when we should fire the timer
 
 
 	#if 0
@@ -1340,7 +1361,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 		#endif
 
 		// only if the edge is the same and the timer is not running
-		if (Trig1_Timer2_Enabled && theTrigInACpld == Trig1_Timer2_Edge) {
+		if (Trig1_Timer2_Enabled && theTrigInACpld == 1) {
 
 			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) == 0) {
 				#ifdef TRIG_TIMING_DEBUG_OUT_IN
@@ -1420,7 +1441,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 		}
 
 		// only if the edge is the same and the timer is not running
-		if (Trig1_Timer3_Enabled && theTrigInACpld == Trig1_Timer3_Edge) {
+		if (Trig1_Timer3_Enabled && theTrigInACpld == 1) {
 			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) == 0) {
 				#ifdef TRIG_TIMING_DEBUG_OUT_IN
 					DbgOut(" H2=OK:: ");
@@ -1506,7 +1527,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 		#endif
 
 		// only if the edge is the same and the timer is not running
-		if (Trig2_Timer2_Enabled && theTrigInBCpld == Trig2_Timer2_Edge) {
+		if (Trig2_Timer2_Enabled && theTrigInBCpld == 1) {
 			if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfTriggerON) == 0) {
 				#ifdef TRIG_TIMING_DEBUG_OUT_IN
 					DbgOut("H1=OK:: ");
@@ -1584,7 +1605,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 		}
 
 		// only if the edge is the same and the timer is not running
-		if (Trig2_Timer3_Enabled && theTrigInBCpld == Trig2_Timer3_Edge) {
+		if (Trig2_Timer3_Enabled && theTrigInBCpld == 1) {
 			if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfTriggerON) == 0) {
 				#ifdef TRIG_TIMING_DEBUG_OUT_IN
 					DbgOut("H2=OK:: ");
