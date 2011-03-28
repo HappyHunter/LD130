@@ -72,6 +72,7 @@ static volatile unsigned long theTriggerCounter2 = 0;
 static volatile unsigned long theTriggerMissedCounter1 = 0;
 static volatile unsigned long theTriggerMissedCounter2 = 0;
 
+static volatile unsigned long theInterruptCounter = 0;
 
 /**
  * The reprogramming trigger counter, just for displaying
@@ -213,7 +214,6 @@ static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long 
 
 #define TRIG_INB_CPLD_TRIS 	_TRISD6
 #define TRIG_INB_CPLD 		_RD6
-
 
 #define	OUTA_CONFIG 		OC4CONbits
 #define	OUTA_TIME_START 	OC4R
@@ -370,13 +370,13 @@ void InitAllBankInfo()
 		theHeadStatus[i-1].m_onTimeChanel3.m_low = theHeadStatus[i-1].m_onTimeChanel3.m_hi = 0;	// ON time for the light
 		theHeadStatus[i-1].m_onTimeChanel4.m_low = theHeadStatus[i-1].m_onTimeChanel4.m_hi = 0;	// ON time for the light
 
-		TheDelayInfo[j-1].m_delayTimer  = 0;
-		TheDelayInfo[j-1].m_widthTimer  = 0;
-		TheDelayInfo[j-1].m_flags	  	= 0;
+		TheDelayInfo[i-1].m_delayTimer  = 0;
+		TheDelayInfo[i-1].m_widthTimer  = 0;
+		TheDelayInfo[i-1].m_flags	  	= 0;
 
-		TheDelayInfoWorking[j-1].m_delayTimer  = 0;
-		TheDelayInfoWorking[j-1].m_widthTimer  = 0;
-		TheDelayInfoWorking[j-1].m_flags	   = 0;
+		TheDelayInfoWorking[i-1].m_delayTimer  = 0;
+		TheDelayInfoWorking[i-1].m_widthTimer  = 0;
+		TheDelayInfoWorking[i-1].m_flags	   = 0;
 	}
 }
 
@@ -387,6 +387,8 @@ void InitAllBankInfo()
 //-----------------------------------------------------------------------------------------
 void initTrigger1()
 {
+	_CNIE = 0;				// global disable interrupts on pin change
+
 	TRIG_INA_CPLD_TRIS = 1;	// enable RD5 as input TRIG_INA_CPLD is shared with CN14
 	_CNIF  = 0;				// clear CN notification flag
 	_CN14IE = 1;			// enable interrupt on the pin status change
@@ -398,10 +400,7 @@ void initTrigger1()
 	_CNIE = 1;				// global enable interrupts on pin change
 
 	Trig1_Timer2_Enabled = 0; 	// if we need to start timer 2 when we receive trigger 1
-//	Trig1_Timer2_Edge = 0;		// on which edge to trigger the timer
-
 	Trig1_Timer3_Enabled = 0;	// if we need to start timer 3 when we receive trigger 1
-//	Trig1_Timer3_Edge = 0;		// on which edge to start the timer
 
 	//Setup trigger 1 output (pin: TRIG_OUTA_PIC)
 	TRIG_OUTA_PIC_TRIS = 0;	// set the port as output
@@ -426,19 +425,22 @@ void initTrigger1()
 //-----------------------------------------------------------------------------------------
 void initTrigger2()
 {
+	_CNIE = 0;				// global disable interrupts on pin change
+							//
 	TRIG_INB_CPLD_TRIS = 1;	// enable RD6 as input TRIG_INB_CPLD_TRIS is shared with CN15
+	//--//--//--//
+	#if 0
 	_CN15IE = 1;			// enable interrupt on the pin status change
+	#endif
 	_CNIF  = 0;				// clear CN notification flag
 	_CN15PUE = 0;			// enable pullup for this pin (optional step only if external pullup is not present)
+
 	IPC3bits.CNIP = 0x01;	// assign the priority level 1.1 is high, 7 is low, 0 disabled
 	Trig2_IN_Last = TRIG_INB_CPLD;// read the current status of input
 	_CNIE = 1;				// global enable interrupts on pin change
 
 	Trig2_Timer2_Enabled = 0; 	// if we need to start timer 2 when we receive trigger 2
-//	Trig2_Timer2_Edge = 0;		// on which edge to trigger the timer
-
 	Trig2_Timer3_Enabled = 0;	// if we need to start timer 3 when we receive trigger 2
-//	Trig2_Timer3_Edge = 0;		// on which edge to start the timer
 
 	//Setup trigger 2 output (pin: TRIG_OUTB_PIC)
 	TRIG_OUTB_PIC_TRIS = 0;	// set the port as output
@@ -750,12 +752,11 @@ void programOutputHead(TBankInfo* pInfo, unsigned char anOutputId)
 	else
 		theHeadStatus[anOutputId-1].m_statusChanel4 = 0;
 
-	DbgOut("Enable pulse module\r\n");
-
-	if (anOutputId == 1)
-		OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
-	else
-		OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+//	DbgOut("Enable pulse module\r\n");
+//	if (anOutputId == 1)
+//		OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+//	else
+//		OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
 
 
 	DbgOut("Program output head done\r\n");
@@ -937,6 +938,13 @@ unsigned long getMissingTriggerCounter2()
 	return theTriggerMissedCounter2;
 }
 
+//-----------------------------------------------------------------------------------------
+unsigned long getInterruptTriggerCounter()
+{
+	return theInterruptCounter;
+}
+
+
 
 
 /**
@@ -1023,6 +1031,7 @@ void setPulseInfoOutput1(TBankInfo* pInfo)
 	// do everything in PWM module
 	if ((TheDelayInfo[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
 
+		OUTA_CONFIG.OCM = 0x0;		// disable single pulse mode
 
 		// pulse time START
 		OUTA_TIME_START =  theDelayTimeInTicks;
@@ -1206,6 +1215,7 @@ void setPulseInfoOutput2(TBankInfo* pInfo)
 	// do everything in PWM module
 	if ((TheDelayInfo[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
 
+		OUTB_CONFIG.OCM = 0x0;		// disable single pulse mode
 
 		// pulse time START
 		OUTB_TIME_START =  theDelayTimeInTicks;
@@ -1388,13 +1398,13 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 
 					// the trigger has been processed
 					// do not re-program hardware until it is cleared
-						// set it before we enable the timer
+					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
 
 					T2CONbits.TON = 1;		// turn ON timer
-
-				} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
-					OUTA_CONFIG.OCM = 0;	// disable single pulse mode
+				}
+				else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
+					OUTA_CONFIG.OCM = 0;		// disable single pulse mode
 
 					_T2IE = 1;					// enable timer 2 interrupt
 					TMR2 = 0;					// reset the counter for timer 2
@@ -1439,6 +1449,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 				#endif
 			}
 		}
+
 
 		// only if the edge is the same and the timer is not running
 		if (Trig1_Timer3_Enabled && theTrigInACpld == 1) {
@@ -1516,7 +1527,11 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 				#endif
 			}
 		}
+
+	} else if (Trig1_IN_Last == theTrigInACpld && (Trig1_Timer2_Enabled || Trig1_Timer3_Enabled)) {
+		bIncTrig |= tcIncMissTrig1;
 	}
+
 
 	// trig 2 is fired
 	if (Trig2_IN_Last != theTrigInBCpld  && Trig2_IN_Enabled) {
@@ -1680,7 +1695,10 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 				#endif
 			}
 		}
+	} else if (Trig2_IN_Last == theTrigInBCpld  && (Trig2_Timer2_Enabled || Trig2_Timer3_Enabled))  {
+		bIncTrig |= tcIncMissTrig2;
 	}
+
 
 	#ifdef TRIG_TIMING_DEBUG_OUT_IN
 		DbgOut("\r\n");
@@ -1694,6 +1712,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 	if ((bIncTrig & tcIncTrig2) != 0) ++theTriggerCounter2;	// increment the trigger counter
 	if ((bIncTrig & tcIncMissTrig1) != 0) ++theTriggerMissedCounter1;	// increment the missing trigger counter
 	if ((bIncTrig & tcIncMissTrig2) != 0) ++theTriggerMissedCounter2;	// increment the missing trigger counter
+	++theInterruptCounter;
 }
 
 
@@ -1850,6 +1869,7 @@ void _ISR __attribute__ ((auto_psv)) _CNInterrupt(void)
 void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 {
 	T2CONbits.TON = 0;		// disable the timer 2
+
 	OUTA_CONFIG.OCM = 0;	// disable single pulse mode
 
 	TMR2 = 0;				// reset the counter for timer 2
@@ -1895,7 +1915,7 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 	// restore the flags and get ready for next trigger
 	else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfPWMOnly) != 0) {
 		TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
-		OUTA_CONFIG.OCM = 0x4;	// enable single pulse mode
+		OUTA_CONFIG.OCM = 0x0;	// disable single pulse mode
 
 		#ifdef TRIG_TIMING_DEBUG_OUT
 			DbgOut("T2: tfPWMOnly\r\n");
@@ -1927,6 +1947,7 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 void _ISR __attribute__ ((auto_psv)) _T3Interrupt (void)
 {
 	T3CONbits.TON = 0;		// disable the timer 3
+
 	OUTB_CONFIG.OCM = 0;	// disable single pulse mode
 
 	TMR3 = 0;				// reset the counter for timer 3
@@ -1972,7 +1993,7 @@ void _ISR __attribute__ ((auto_psv)) _T3Interrupt (void)
 	// restore the flags and get ready for next trigger
 	else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfPWMOnly) != 0) {
 		TheDelayInfoWorking[HEAD2_IDX] = TheDelayInfo[HEAD2_IDX];
-		OUTB_CONFIG.OCM = 0x4;	// enable single pulse mode
+		OUTB_CONFIG.OCM = 0x0;	// disable single pulse mode
 
 		#ifdef TRIG_TIMING_DEBUG_OUT
 			DbgOut("T3H2: tfPWMOnly\r\n");
@@ -1999,102 +2020,12 @@ void _ISR __attribute__ ((auto_psv)) _T3Interrupt (void)
 
 void fireSoftTrigger(unsigned char aTriggerId)
 {
-	#if 0
-	unsigned char RD5_Old;
-	unsigned char RD6_Old;
 
-	RD5_Old = TRIG_INA_CPLD;
-	RD6_Old = _RD6;
-
-//	outputString(&Uart1, "ST \r\n");
-//
-//	outputString(&Uart1, " Trig2_IN = ");
-//	outputIntAsString(&Uart1, Trig2_IN);
-//
-//	outputString(&Uart1, " LATD6 = ");
-//	outputIntAsString(&Uart1, LATD6);
-//
-//	outputString(&Uart1, "\r\n");
-
-	if (aTriggerId & 0x01) {
-		if (Trig1_Timer2_Enabled && T2CONbits.TON == 0) {
-			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
-			asm("nop");
-			asm("nop");
-			asm("nop");
-    		TRIG_INA_CPLD = !RD5_Old;
-//			outputString(&Uart1, "RD5 = Trig1_Timer2_Edge : ");
-//			outputIntAsString(&Uart1, Trig1_Timer2_Edge);
-//			outputString(&Uart1, " RD5_Old = ");
-//			outputIntAsString(&Uart1, RD5_Old);
-//			outputString(&Uart1, "\r\n");
-		}
-
-		if (Trig1_Timer3_Enabled && T3CONbits.TON == 0) {
-			TRIG_INA_CPLD_TRIS = 0;				// enable RD5 as input RD5 is shared with CN14
-			asm("nop");
-			asm("nop");
-			asm("nop");
-    		TRIG_INA_CPLD = !RD5_Old ;
-//			outputString(&Uart1, "RD5 = Trig1_Timer3_Edge : ");
-//			outputIntAsString(&Uart1, Trig1_Timer3_Edge);
-//			outputString(&Uart1, " RD5_Old = ");
-//			outputIntAsString(&Uart1, RD5_Old);
-//			outputString(&Uart1, "\r\n");
-		}
-
-	}
-
-//	if (aTriggerId & 0x02) {
-//		if (Trig2_Timer2_Enabled && T2CONbits.TON == 0) {
-//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
-//			#asm
-//			nop
-//			nop
-//			nop
-//			#endasm
-//    		LATD6 = !RD6_Old;
-//			outputString(&Uart1, "RD6 = Trig2_Timer2_Edge : ");
-//			outputIntAsString(&Uart1, Trig2_Timer2_Edge);
-//			outputString(&Uart1, "\r\n");
-//		}
-//
-//		if (Trig2_Timer3_Enabled && T3CONbits.TON == 0) {
-//			_TRISD6 = 0;				// enable RD5 as input RD5 is shared with CN14
-//			#asm
-//			nop
-//			nop
-//			nop
-//			#endasm
-//    		LATD6 = !RD6_Old;
-//			outputString(&Uart1, "RD6 = Trig2_Timer3_Edge : ");
-//			outputIntAsString(&Uart1, Trig2_Timer3_Edge);
-//			outputString(&Uart1, "\r\n");
-//		}
-//	}
-
-	delay_us(50);
-
-	if (aTriggerId & 0x01) {
-		TRIG_INA_CPLD = RD5_Old;
-		TRIG_INA_CPLD_TRIS = 1;				// enable RD5 as input RD5 is shared with CN14
-		TRIG_INA_CPLD = RD5_Old;
-	}
-//
-//	if (aTriggerId & 0x02) {
-//		RD6 = RD6_Old;
-//		_TRISD6 = 0;				// enable RD6 as input RD56
-//	}
-
-	asm("nop");
-	asm("nop");
-	asm("nop");
-//	outputString(&Uart1, "STD\r\n");
-	#endif
-
+#if 0
 	DbgOut("fireSoftTrigger \r\n");
 	processTriggerIn(0, 0);
 	processTriggerIn(1, 1);
+#endif
 
 }
 

@@ -182,7 +182,7 @@ unsigned long getTriggerCounter1();
 unsigned long getTriggerCounter2();
 
 /**
- * Returns the counter for the mmissing trigger. Every time we
+ * Returns the counter for the missing trigger. Every time we
  * trigger the controller during the period while it is still doing
  * the previous trigger we will increment the counter. This is
  * just for displaying and statistics purpose
@@ -192,6 +192,15 @@ unsigned long getTriggerCounter2();
 unsigned long getMissingTriggerCounter1();
 unsigned long getMissingTriggerCounter2();
 
+
+/**
+ * Returns the counter for the interrupt trigger. Every time
+ * trigger interrupt arrives this counter is incremented. This
+ * is just for displaying and statistics purpose
+ *
+ * @return unsigned long
+ */
+unsigned long getInterruptTriggerCounter();
 
 /**
  * Reprograms all the DAC settings to 0

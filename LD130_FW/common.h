@@ -91,12 +91,18 @@ typedef struct tag_UARTBuff2
 #define DbgOutInt(X)
 #define DbgOutFloat(X)
 #else
+#if 0
 #define DbgOut(X) outputString_UART2(X)
 #define DbgOutInt(X) outputIntAsString_UART2(X)
 #define DbgOutFloat(X) outputFloatAsString_UART2(X)
 #define DbgOutIntHex(X) outputIntAsHexString_UART2(X)
 #include "Uart.h"
-
+#else
+#define DbgOut(X)
+#define DbgOutIntHex(X)
+#define DbgOutInt(X)
+#define DbgOutFloat(X)
+#endif
 #endif
 
 

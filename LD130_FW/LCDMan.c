@@ -144,6 +144,7 @@ void Task_LCDMan (void)
 			if (++activeScreen >= NUM_OF_SCREENS){
 				activeScreen = 0;
 			}
+//			activeScreen =3;
 
 			// in case if LCD was disconnected
 			// and then connected back we need to reinitialize it
@@ -452,13 +453,28 @@ void updateScreen3(unsigned short aCounter)
 void updateScreen4(unsigned short aCounter)
 {
 	char buf[12];
-	setLcdText(3, 2, 0, "MC");
-	getIntAsString(buf, getMissingTriggerCounter1());
-	setLcdText(3, 2, 3 , &buf[1]);
 
-	setLcdText(3, 3, 0, "MC");
+	getIntAsString(buf, getTriggerCounter1());
+	setLcdText(3, 0, 0, "T1:");
+	setLcdText(3, 0, 3 , &buf[3]);
+
+	getIntAsString(buf, getTriggerCounter2());
+	setLcdText(3, 0, 11, "T2:");
+	setLcdText(3, 0, 13, &buf[3]);
+
+	getIntAsString(buf, getMissingTriggerCounter1());
+	setLcdText(3, 1, 0, "M1:");
+	setLcdText(3, 1, 3 , &buf[3]);
+
 	getIntAsString(buf, getMissingTriggerCounter2());
+	setLcdText(3, 1, 11, "M2:");
+	setLcdText(3, 1, 13, &buf[3]);
+
+	setLcdText(3, 3, 0, "IO");
+	getIntAsString(buf, getInterruptTriggerCounter());
 	setLcdText(3, 3, 3 , &buf[1]);
+
+
 }
 
 
