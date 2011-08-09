@@ -158,6 +158,162 @@ ToolArgsString=-g -Wall -fverbose-asm
 TraceCmdString=
 DebugOptions=
 [File012]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\main.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File013]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\osa.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File014]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\Uart.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File015]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\SPI.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File016]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\CmdManager.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File017]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\LCD.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File018]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\LCDMan.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File019]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\HardwareController.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File020]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\MCP23S17.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File021]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\Monitoring.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File022]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\LTC_DAC.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File023]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\parser.o
+Folder=Intermediary
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={069BD372-6CA0-40D4-BF2F-5DC806D05083}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-g -Wall -fverbose-asm
+TraceCmdString=
+DebugOptions=-D__DEBUG
+[File024]
 Location=D:\Work\LD130\LD130\LD130_FW\LD130.cof
 Folder=Output
 DeviceName=dsPIC30F6010A
@@ -170,7 +326,7 @@ SuiteArgsString=
 ToolArgsString=-Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
 TraceCmdString=
 DebugOptions=
-[File013]
+[File025]
 Location=D:\Work\LD130\LD130\LD130_FW\LD130.hex
 Folder=Output
 DeviceName=dsPIC30F6010A
@@ -183,7 +339,33 @@ SuiteArgsString=
 ToolArgsString=-Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
 TraceCmdString=
 DebugOptions=
+[File026]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\LD130.cof
+Folder=Output
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={433C3D55-811D-409D-A6BF-159CF9355B42}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-ld.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
+TraceCmdString=
+DebugOptions=--defsym=__MPLAB_DEBUG=1
+[File027]
+Location=C:\Users\Alex\Documents\dsPIC\LD130\LD130_FW\LD130.hex
+Folder=Output
+DeviceName=dsPIC30F6010A
+LanguageToolSuiteID={479DDE59-4D56-455E-855E-FFF59A3DB57E}
+LanguageToolID={433C3D55-811D-409D-A6BF-159CF9355B42}
+LanguageToolLocation=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-ld.exe
+PPAD=$(BINDIR)||$(TMPDIR)||$(AINDIR)||$(INCDIR)|..\Intf;osa||$(LIBDIR)||$(LKRDIR)||
+SOLK=<src>|main.c|osa\osa.c|Uart.c|SPI.c|CmdManager.c|LCD.c|LCDMan.c|HardwareController.c|MCP23S17.c|Monitoring.c|LTC_DAC.c|C:\Users\Alex\Documents\dsPIC\LD130\Intf\parser.c||<obj>||<lib>||<lkr>||
+SuiteArgsString=
+ToolArgsString=-Map="$(BINDIR_)$(TARGETBASE).map" --report-mem -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
+TraceCmdString=
+DebugOptions=--defsym=__MPLAB_DEBUG=1
 [TOOL_LOC_STAMPS]
 tool_loc{DE18EB1A-B46B-486B-B96F-A811A635DFAC}=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-as.exe
-tool_loc{069BD372-6CA0-40D4-BF2F-5DC806D05083}=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-gcc.exe
-tool_loc{433C3D55-811D-409D-A6BF-159CF9355B42}=C:\Program Files (x86)\Microchip\MPLAB C30\bin\pic30-ld.exe
+tool_loc{069BD372-6CA0-40D4-BF2F-5DC806D05083}=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-gcc.exe
+tool_loc{433C3D55-811D-409D-A6BF-159CF9355B42}=C:\Program Files\Microchip\mplabc30\v3.30b\bin\pic30-ld.exe

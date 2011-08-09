@@ -178,6 +178,7 @@ static const unsigned short theDelayLookupTable[80] __attribute__ ((space(auto_p
    1031,1046,1061,1076,1090,1105,1120,1135,1149,1164,
 };
 
+//-----------------------------------------------------------------------------------------
 static inline unsigned long getTimeInTicks(unsigned long aTimeInMicrosec)
 {
 
@@ -195,6 +196,7 @@ static inline unsigned long getTimeInTicks(unsigned long aTimeInMicrosec)
 	//	return ((unsigned long)((long double)((long double)(A_FOSC_)/((long double)1000000.0)) * (aTimeInMicrosec))) ;
 }
 
+//-----------------------------------------------------------------------------------------
 static inline unsigned long getTimeInTicksPre(long double aTimeInMicrosec, long double timerPreScaler)
 {
 	return ((unsigned long)((long double)(((long double)(A_FOSC_/1000000.0)) * (aTimeInMicrosec)) / timerPreScaler)) ;

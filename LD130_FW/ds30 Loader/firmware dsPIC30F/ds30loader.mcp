@@ -42,7 +42,7 @@ file_003=no
 file_000=src\ds30loader.s
 file_001=src\settings.inc
 file_002=src\devices.inc
-file_003=C:\Program Files (x86)\Microchip\MPLAB ASM30 Suite\Support\dsPIC30F\gld\p30f6010A.gld
+file_003=C:\Program Files\Microchip\MPLAB ASM30 Suite\support\dsPIC30F\gld\p30f6010A.gld
 [SUITE_INFO]
 suite_guid={F62E444C-B232-4066-9AB0-A6F4E5261396}
 suite_state=

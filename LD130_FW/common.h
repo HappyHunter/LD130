@@ -25,7 +25,7 @@
 
 #define B_LD130
 
-//#define USE_30_MHZ
+#define USE_30_MHZ
 
 #ifdef USE_30_MHZ
 	// 7.37Mhz crystal in 16X PLL mode
@@ -45,7 +45,7 @@
 //-----------------------------------------------------------------------------------------
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 0
-#define VERSION_BUILD 3
+#define VERSION_BUILD 4
 
 //-----------------------------------------------------------------------------------------
 // the UART1 receiving buffer
