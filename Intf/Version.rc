@@ -1,0 +1,60 @@
+#define FILE_DESCRIPTION "Boreal Inc.\0"
+#define INTERNAL_NAME "LD130 Light Controller\0"
+#define ORIGINAL_FILE_NAME "LD130i.dll\0"
+
+
+#ifndef FILE_DESCRIPTION
+#include "AppInfo.h"
+#endif
+
+#include "LD130Version.h"
+
+#define makechar(x)  #x
+#define makeversion(x,y,z) makechar(x) "." makechar(y) "." makechar(z)
+#define makestring(x) makechar(x)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+#include "afxres.h"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION		BOREAL_VERSION_MAJOR, BOREAL_VERSION_MINOR, BOREAL_VERSION_BUILD
+ PRODUCTVERSION		BOREAL_VERSION_MAJOR, BOREAL_VERSION_MINOR, BOREAL_VERSION_BUILD
+ FILEFLAGSMASK		0x3fL
+#ifdef _DEBUG
+ FILEFLAGS			VS_FF_DEBUG
+#else
+ FILEFLAGS			0x0L
+#endif
+ FILEOS				VOS_NT_WINDOWS32
+#if defined _DLL || defined __DLL__
+ FILETYPE			VFT_DLL
+#else
+ FILETYPE			VFT_APP
+#endif
+ FILESUBTYPE		0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",		"Boreal Inc.\0"
+            VALUE "FileDescription",	FILE_DESCRIPTION
+            VALUE "FileVersion",		BOREAL_FULL_FILE_VERSION_STR "\0"
+            VALUE "InternalName",		INTERNAL_NAME
+            VALUE "LegalCopyright",		BOREAL_COPYRIGHT "\0"
+            VALUE "OriginalFilename",	ORIGINAL_FILE_NAME
+            VALUE "ProductName",		"Boreal Inc. \0"
+            VALUE "ProductVersion",		makeversion(BOREAL_VERSION_MAJOR, BOREAL_VERSION_MINOR, BOREAL_VERSION_BUILD) "\0"
+            VALUE "Product Build",		makestring(BOREAL_VERSION_BUILD) "\0"
+            VALUE "Message Version",	makestring(BOREAL_VERSION_MESSAGES) "\0"
+            VALUE "Database Version",	makestring(BOREAL_VERSION_DATABASE) "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
