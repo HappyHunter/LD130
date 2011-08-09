@@ -38,14 +38,14 @@
 /**
  * The com port 1 baud rate used for communications with PC
 */
-#define A_BAUDE_RATE 9600
+#define A_BAUDE_RATE 115200
 
 //-----------------------------------------------------------------------------------------
 // the software version
 //-----------------------------------------------------------------------------------------
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 0
-#define VERSION_BUILD 1
+#define VERSION_BUILD 3
 
 //-----------------------------------------------------------------------------------------
 // the UART1 receiving buffer
@@ -91,12 +91,18 @@ typedef struct tag_UARTBuff2
 #define DbgOutInt(X)
 #define DbgOutFloat(X)
 #else
+#if 0
 #define DbgOut(X) outputString_UART2(X)
 #define DbgOutInt(X) outputIntAsString_UART2(X)
 #define DbgOutFloat(X) outputFloatAsString_UART2(X)
 #define DbgOutIntHex(X) outputIntAsHexString_UART2(X)
 #include "Uart.h"
-
+#else
+#define DbgOut(X)
+#define DbgOutIntHex(X)
+#define DbgOutInt(X)
+#define DbgOutFloat(X)
+#endif
 #endif
 
 

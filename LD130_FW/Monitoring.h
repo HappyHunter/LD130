@@ -22,5 +22,8 @@ float getTemperatureH1();
 float getTemperatureH2();
 float getTemperatureAmb();
 
-
+/**
+ * Returns the status string for any errors happening
+*/
+const char* getErrorStatus();
 #endif

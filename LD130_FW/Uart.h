@@ -12,6 +12,10 @@
 void Start_UART1 (void);
 void Start_UART2 (void);
 
+void ReStart_UART1 (void);
+void ReStart_UART2 (void);
+
+
 void outputChar_UART1(char ch);
 void outputString_UART1(const char* pCh);
 void outputIntAsHexString_UART1(unsigned long aValue);
@@ -30,6 +34,10 @@ extern OST_CSEM  Uart2_Msg;
 
 extern TUartBuff1 Uart1;
 extern TUartBuff2 Uart2;
+
+unsigned char UART1_Has_Error (void);
+unsigned char UART2_Has_Error (void);
+
 
 //#define UartDbg Uart2
 //

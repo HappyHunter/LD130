@@ -17,42 +17,39 @@
 
 int snprintf(char *, size_t, const char *, ...);
 
-#define NUM_OF_SCREENS 3
+#define NUM_OF_SCREENS 4
 
 static char TheScreens[NUM_OF_SCREENS][LCD_MAXROWS][LCD_MAXCOLS];
 //static char TheScreensChanged[NUM_OF_SCREENS];
 /*
 *    01234567890123456789
 *
-*    1A:100.00%1B:100.00%
-*    1C:100.00%1D:100.00%
-*    2A:100.00%2B:100.00%
-*    2C:100.00%2D:100.00%
+*    1P:100.00 O:1 B0 RTI
+*    2P:100.00 D00000020
+*    3P:100.00 W00000100
+*    4P:100.00 C000000001
 *
-*    D:999999999us.B1.RTI
-*    W:999999999us.999999
-*    D:999999999us.999999
-*    D:999999999us.......
+*    1P:100.00 O:2 B0 RTI
+*    2P:100.00 D00000020
+*    3P:100.00 W00000100
+*    4P:100.00 C000000012
 *
-*    1:P100.00.O:1 B1.RTI
-*    2:P100.00.D999999999
-*    3:P100.00.W999999999
-*    4:P100.00.C999999999
 *
-*    1:P100.00.O:2 B1.RTI
-*    2:P100.00.D999999999
-*    3:P100.00.W999999999
-*    4:P100.00.C999999999
+*    Boreal Inc.  tA 35.5
+*    t1 22.5      t2 22.5
+*    ERR:
+*    Ver:1.0.3  		3
 *
-*    Boreal Inc..........
-*    t1:55.5..t2:55.5....
-*    ERR:OK..............
-*    B:4.NB:4...Ver:1.2.3
+*    T1:0000001 T2:000001
+*    M1:0000000 M2:000000
+*    IO 0000001 		4
+*
 */
 
 void updateScreen1(unsigned short aCounter);
 void updateScreen2(unsigned short aCounter);
 void updateScreen3(unsigned short aCounter);
+void updateScreen4(unsigned short aCounter);
 
 
 //-----------------------------------------------------------------------------------------
@@ -91,6 +88,10 @@ void Task_LCDMan (void)
 
 	#if NUM_OF_SCREENS >= 4
 	setLcdText(3, 4, LCD_MAXCOLS-1, "4");
+	#endif
+
+	#if NUM_OF_SCREENS >= 5
+	setLcdText(3, 4, LCD_MAXCOLS-1, "5");
 	#endif
 
 
@@ -133,12 +134,13 @@ void Task_LCDMan (void)
 		}
 
 		// switch the active screen
-		if (theCounter > 200) {
+		if (theCounter > 150) {
 			theCounter = 0;
 
 			if (++activeScreen >= NUM_OF_SCREENS){
 				activeScreen = 0;
 			}
+//			activeScreen =3;
 
 			// in case if LCD was disconnected
 			// and then connected back we need to reinitialize it
@@ -160,6 +162,10 @@ void Task_LCDMan (void)
 
 		case 2:
 			updateScreen3(theCounter>>4);
+			break;
+
+		case 3:
+			updateScreen4(theCounter>>4);
 			break;
 		}
 	}
@@ -341,7 +347,7 @@ void updateScreen1(unsigned short aCounter)
 	setLcdChar(0, 3, 3, buf[6]);
 	setLcdText(0, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter1());
-	setLcdText(0, 3, 11, buf);
+	setLcdText(0, 3, 11, &buf[2]);
 }
 
 
@@ -406,7 +412,7 @@ void updateScreen2(unsigned short aCounter)
 	setLcdChar(1, 3, 3, buf[6]);
 	setLcdText(1, 3, 9, " C");
 	getIntAsString(buf, getTriggerCounter2());
-	setLcdText(1, 3, 11, buf);
+	setLcdText(1, 3, 11, &buf[2]);
 }
 
 //-----------------------------------------------------------------------------------------
@@ -427,7 +433,9 @@ void updateScreen3(unsigned short aCounter)
 	getTemperatureAsString(buf, sizeof(buf) / sizeof(buf[0]), getTemperatureH2());
 	setLcdText(2, 1, 16, buf);
 
-	setLcdText(2, 2, 0, "NO ERROR");
+
+	setLcdText(2, 2, 0, "ERR:");
+	setLcdText(2, 2, 4, getErrorStatus());
 
 	setLcdText(2, 3, 0, "Ver:");
 	setLcdChar(2, 3, 4, VERSION_MAJOR+'0');
@@ -436,6 +444,36 @@ void updateScreen3(unsigned short aCounter)
 	setLcdChar(2, 3, 7, '.');
 	setLcdChar(2, 3, 8, VERSION_BUILD+'0');
 }
+
+//-----------------------------------------------------------------------------------------
+void updateScreen4(unsigned short aCounter)
+{
+	char buf[12];
+
+	getIntAsString(buf, getTriggerCounter1());
+	setLcdText(3, 0, 0, "T1:");
+	setLcdText(3, 0, 3 , &buf[3]);
+
+	getIntAsString(buf, getTriggerCounter2());
+	setLcdText(3, 0, 11, "T2:");
+	setLcdText(3, 0, 13, &buf[3]);
+
+	getIntAsString(buf, getMissingTriggerCounter1());
+	setLcdText(3, 1, 0, "M1:");
+	setLcdText(3, 1, 3 , &buf[3]);
+
+	getIntAsString(buf, getMissingTriggerCounter2());
+	setLcdText(3, 1, 11, "M2:");
+	setLcdText(3, 1, 13, &buf[3]);
+
+	setLcdText(3, 3, 0, "IO");
+	getIntAsString(buf, getInterruptTriggerCounter());
+	setLcdText(3, 3, 3 , &buf[1]);
+
+
+}
+
+
 
 
 

@@ -12,7 +12,8 @@
 #include <stdio.h>
 #include "LCDMan.h"
 
-unsigned short Baud_Rate(unsigned long A_BAUD_) { return ((unsigned short)(A_FOSC_/(16UL * A_BAUD_) -1)); }
+unsigned short Baud_Rate(unsigned long A_BAUD_) { return (unsigned short)((((A_FOSC_/A_BAUD_)/8)-1)/2); }
+
 
 // prototype functions
 void outputIntAsHexString(int aPort, unsigned long aValue);
@@ -31,7 +32,7 @@ OST_CSEM  Uart1_Msg;
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Start_UART1                                                 *
+ *  Function:       ReStart_UART1                                                 *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -44,13 +45,9 @@ OST_CSEM  Uart1_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Start_UART1 (void)
+void ReStart_UART1 (void)
 {
 	static unsigned long Uart1_Baud_Rate;	// stored rate for UART 1
-
-	// create a semaphore
-	OS_Csem_Create(Uart1_Msg);
-
 
 	//-----------------------------------------------------------------------------------------
 	// Initializes UART 1 with:
@@ -143,6 +140,29 @@ void Start_UART1 (void)
 }
 
 
+/********************************************************************************
+ *                                                                              *
+ *  Function:       Start_UART1                                                 *
+ *                                                                              *
+ *------------------------------------------------------------------------------*
+ *                                                                              *
+ *  description:    Initialize the semaphore and then starts hardware for UART 1*
+ *  																			*
+ *  parameters:     void                                                        *
+ *                                                                              *
+ *  on return:      void                                                        *
+ *                                                                              *
+ *                                                                              *
+ ********************************************************************************/
+void Start_UART1 (void)
+{
+	// create a semaphore
+	OS_Csem_Create(Uart1_Msg);
+
+	ReStart_UART1();
+}
+
+
 //-----------------------------------------------------------------------------------------
 // Here is our lovely interrupt function on character receive - the name is important.
 //
@@ -160,16 +180,17 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 
 		// now start reading the data from UART
 		do {
-			//**********************************************************************************************************************************************
-			// Debug LED blinking
-			//**********************************************************************************************************************************************
-			_LATD4 = !_LATD4;
-
 			// while there is any data in the buffer
 			// read it completely
 			while (U1STAbits.URXDA) {
 				static char ch;
 				ch = U1RXREG;
+
+				if (U1STAbits.FERR || U1STAbits.PERR) {
+					U1STAbits.FERR = 0;
+					U1STAbits.PERR = 0;
+					continue;
+				}
 
 				// read the character from FIFO
 				Uart1.m_RXBuffer[Uart1.m_RXTail] = ch;
@@ -204,9 +225,16 @@ void _ISR __attribute__ ((auto_psv)) _U1RXInterrupt(void)
 		} while(U1STAbits.URXDA);
 	}
 
-	U1STAbits.OERR = 0;
-	U1STAbits.FERR = 0;
-	U1STAbits.PERR = 0;
+	if (U1STAbits.OERR != 0 || U1STAbits.FERR != 0 || U1STAbits.PERR != 0) {
+		U1MODEbits.UARTEN = 0;          // disable UART 1
+		Nop();							// this will reset any errors pending
+		Nop();
+		Nop();
+		Nop();
+		U1MODEbits.UARTEN = 1;      // Enable UART 1
+		U1STAbits.UTXEN = 1;        // enable TX function, should be after U1_UARTEN
+	}
+
 
 	_U1RXIF = 0;
 }
@@ -275,7 +303,7 @@ OST_CSEM  Uart2_Msg;
 
 /********************************************************************************
  *                                                                              *
- *  Function:       Start_UART2                                                  *
+ *  Function:       ReStart_UART2                                                  *
  *                                                                              *
  *------------------------------------------------------------------------------*
  *                                                                              *
@@ -288,12 +316,9 @@ OST_CSEM  Uart2_Msg;
  *                                                                              *
  *                                                                              *
  ********************************************************************************/
-void Start_UART2 (void)
+void ReStart_UART2 (void)
 {
 	static unsigned long Uart2_Baud_Rate;	// stored rate for UART 1
-
-	OS_Csem_Create(Uart2_Msg);
-
 
 	//-----------------------------------------------------------------------------------------
 	// Initializes UART 1 with:
@@ -382,6 +407,27 @@ void Start_UART2 (void)
 }
 
 
+/********************************************************************************
+ *                                                                              *
+ *  Function:       Start_UART2                                                  *
+ *                                                                              *
+ *------------------------------------------------------------------------------*
+ *                                                                              *
+ *  description:    Initialize the semaphore and then starts hardware for UART 2*
+ *  																			*
+ *  parameters:     void                                                        *
+ *                                                                              *
+ *  on return:      void                                                        *
+ *                                                                              *
+ *                                                                              *
+ ********************************************************************************/
+void Start_UART2 (void)
+{
+	OS_Csem_Create(Uart2_Msg);
+
+	ReStart_UART2();
+}
+
 //-----------------------------------------------------------------------------------------
 // Here is our lovely interrupt function on character receive - the name is important.
 //
@@ -404,6 +450,12 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 			while (U2STAbits.URXDA) {
 				static char ch;
 				ch = U2RXREG;
+
+				if (U2STAbits.FERR || U2STAbits.PERR) {
+					U2STAbits.FERR = 0;
+					U2STAbits.PERR = 0;
+					continue;
+				}
 
 				// read the character from FIFO
 				Uart2.m_RXBuffer[Uart2.m_RXTail] = ch;
@@ -429,6 +481,16 @@ void _ISR __attribute__ ((auto_psv)) _U2RXInterrupt(void)
 			}
 
 		} while(U2STAbits.URXDA);
+	}
+
+	if (U2STAbits.OERR != 0 || U2STAbits.FERR != 0 || U2STAbits.PERR != 0) {
+		U2MODEbits.UARTEN = 0;          // disable UART 2
+		Nop();							// this will reset any errors pending
+		Nop();
+		Nop();
+		Nop();
+		U2MODEbits.UARTEN = 1;          // Enable UART 2
+		U2STAbits.UTXEN = 1;        	// enable TX function, should be after U2_UARTEN
 	}
 	_U2RXIF = 0;
 }
@@ -680,5 +742,20 @@ void outputFloatAsString(int aPort, double aValue)
 	else
 		outputString_UART2(pCh);
 }
+
+unsigned char UART1_Has_Error (void)
+{
+	if (U1STAbits.FERR || U1STAbits.PERR)
+		return 1;
+	return 0;
+}
+
+unsigned char UART2_Has_Error (void)
+{
+	if (U2STAbits.FERR || U2STAbits.PERR)
+		return 1;
+	return 0;
+}
+
 
 

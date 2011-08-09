@@ -231,6 +231,39 @@ void Init (void)
 	_LATA9 = 0;				// GPIO IO reset Pin
 
 
+	_CN0IE = 0;				// disable the CN0 pin
+	_CN1IE = 0;				// disable the CN1 pin
+	_CN2IE = 0;				// disable the CN2 pin
+	_CN3IE = 0;				// disable the CN3 pin
+	_CN4IE = 0;				// disable the CN4 pin
+	_CN5IE = 0;				// disable the CN5 pin
+	_CN6IE = 0;				// disable the CN6 pin
+	_CN7IE = 0;				// disable the CN7 pin
+	_CN8IE = 0;				// disable the CN8 pin
+	_CN9IE = 0;				// disable the CN9 pin
+	_CN10IE = 0;			// disable the CN10 pin
+	_CN11IE = 0;			// disable the CN11 pin
+	_CN12IE = 0;			// disable the CN12 pin
+	_CN13IE = 0;			// disable the CN13 pin
+	_CN14IE = 0;			// disable the CN14 pin
+	_CN15IE = 0;			// disable the CN15 pin
+	_CN16IE = 0;			// disable the CN16 pin
+	_CN17IE = 0;			// disable the CN17 pin
+	_CN18IE = 0;			// disable the CN18 pin
+	_CN19IE = 0;			// disable the CN19 pin
+	_CN20IE = 0;			// disable the CN20 pin
+	_CN21IE = 0;			// disable the CN21 pin
+
+
+	OC1CONbits.OCM = 0;		// Disable output compare pins
+	OC2CONbits.OCM = 0; 	// Disable output compare pins
+	OC3CONbits.OCM = 0;		// Disable output compare pins
+	OC4CONbits.OCM = 0;		// Disable output compare pins
+	OC5CONbits.OCM = 0;		// Disable output compare pins
+	OC6CONbits.OCM = 0;		// Disable output compare pins
+	OC7CONbits.OCM = 0;		// Disable output compare pins
+	OC8CONbits.OCM = 0;		// Disable output compare pins
+
 	_LATA9 = 0;				// GPIO IO reset Pin, LOW is in reset
 	delay_us(10); 			// reset for 10*10K cycles
 	_LATA9 = 1; 			// GPIO IO reset Pin, HIGH is working
@@ -287,9 +320,9 @@ void Init (void)
 	IPC0bits.T1IP = 0x04;	// assign the lower priority level. 1 is high, 7 is low, 0 disabled
 	TMR1=0;					// reset the counter for timer 1
 	_T1IF = 0;				// reset interrupt flag for timer 1
-	_T1IE = 1;				// enable timer 1 interrupt
-	PR1 = TIMER1_PERIOD;	// every 1000 cycles
-	T1CONbits.TON = 0;		// start the timer
+//	_T1IE = 1;				// enable timer 1 interrupt
+	PR1 = 32768;	// every 1000 cycles
+	T1CONbits.TON = 1;		// start the timer
 
 
 	// program and start T1 timer

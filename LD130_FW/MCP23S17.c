@@ -95,7 +95,7 @@ void MCP23S17Init1()
 //	input. When a bit is clear, the corresponding pin
 //	becomes an output.
 	SPI2_WriteRead(IODIRA); // configure the IO ports direction
-	SPI2_WriteRead(0xFC);	// ALL are inputs
+	SPI2_WriteRead(0xF0);	// GPA0-GPA3 outputs, GPA4-GPA7 Inputs
 	SPI2_WriteRead(0xFE);	// Port B GPB0 is output
 	SPI2_ChipSelect_Single(SPI_Chip_Select_1, 1); // disable I/O
 	delay_us(10); //
@@ -186,7 +186,7 @@ void MCP23S17Init2()
 //	input. When a bit is clear, the corresponding pin
 //	becomes an output.
 	SPI2_WriteRead(IODIRA); // configure the IO ports direction
-	SPI2_WriteRead(0xFC);	// ALL are inputs
+	SPI2_WriteRead(0xF0);	// GPA0-GPA3 outputs, GPA4-GPA7 Inputs
 	SPI2_WriteRead(0xFE);	// Port B GPB0 is output
 	SPI2_ChipSelect_Single(SPI_Chip_Select_2, 1); // disable I/O
 	delay_us(10); //
@@ -302,4 +302,35 @@ void MCP23S17WriteHead2(unsigned short data)
 //	OS_Bsem_Set(SPI_2_Busy_Sema);
 }
 
+/**
+ * Enable or disable the VOUT for each chanel separately. We
+ * need to do that to prevent small current leakage even if we
+ * set the current to zero (0) .
+ *
+ * Inputs:
+ *
+ *  unsigned char aHead - the Head ID 1 or 2
+ *
+ *  unsigned long aChanel1,aChanel2,aChanel3,aChanel4 - the
+ *  current value in percents 0 - 100 00% with fixed decimal
+ *  point at 2 digits
+*/
+//-----------------------------------------------------------------------------------------
+void MCP23S17EnableVout(unsigned char aHead, unsigned long aChanel1, unsigned long aChanel2, unsigned long aChanel3, unsigned long aChanel4)
+{
+	unsigned short theValue = 0;
+	if (aHead == 1) {
+		if (aChanel1 > 0) theValue |= ioH1C1VOutEnabled;
+		if (aChanel2 > 0) theValue |= ioH1C2VOutEnabled;
+		if (aChanel3 > 0) theValue |= ioH1C3VOutEnabled;
+		if (aChanel4 > 0) theValue |= ioH1C4VOutEnabled;
+		MCP23S17WriteHead1(theValue);
+	} else {
+		if (aChanel1 > 0) theValue |= ioH2C1VOutEnabled;
+		if (aChanel2 > 0) theValue |= ioH2C2VOutEnabled;
+		if (aChanel3 > 0) theValue |= ioH2C3VOutEnabled;
+		if (aChanel4 > 0) theValue |= ioH2C4VOutEnabled;
+		MCP23S17WriteHead2(theValue);
+	}
+}
 
