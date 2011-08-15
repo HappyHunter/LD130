@@ -150,9 +150,15 @@ static volatile unsigned char Trig2_Timer2_Enabled; // if we need to start timer
 static volatile unsigned char Trig2_Timer3_Enabled;	// if we need to start timer 3 when we receive trigger 2
 //static volatile unsigned char Trig2_Timer3_Edge;	// on which edge to start the timer
 
+typedef enum tag_NextBankFlags
+{
+	nbfOK	 	= 0x00,
+	nbfTrigger1 = 0x01,
+	nbfTrigger2 = 0x02,
+	nbfNone 	= 0xF0,
+};
 
-static volatile unsigned char AdvanceToTheNextBank = 1;	// flag that is set when we nned to advance to the next bank
-
+static volatile unsigned char AdvanceToTheNextBank = nbfNone;	// flag that is set when we need to advance to the next bank
 
 
 /**
@@ -410,7 +416,7 @@ void initTrigger1()
 
 	T2CONbits.TON = 0;		// disable the timer 2
 
-	//AdvanceToTheNextBank = 0; //TODO check needed?
+	AdvanceToTheNextBank = nbfNone;
 
 	TRIGGER1_EDGE = 0;  	// program the trigger edge selection as output
 	TRIGGER1_EDGE_TRIS = 0;
@@ -780,50 +786,6 @@ void resetAllDACs()
 
 
 
-//-----------------------------------------------------------------------------------------
-void processNextSequence(void)
-{
-	static unsigned char old_Trig1_IN_Enabled;
-	static unsigned char old_Trig2_IN_Enabled;
-
-	//if ((TheFlashFlags & fifUseBanks) == 0) {
-	//	AdvanceToTheNextBank = 0;	//multi-banks not enabled
-	//	return ;
-	//}
-
-	if (AdvanceToTheNextBank == 0)
-		return ; 					//has already processed current bank, not ready for the next bank in sequence yet
-
-	AdvanceToTheNextBank = 0;		// reset the flag
-
-	// temporarily disable the input trigger
-	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
-	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
-	Trig1_IN_Enabled = 0;
-	Trig2_IN_Enabled = 0;
-
-	DbgOut("processNextSequence");
-	DbgOut("\r\n");
-
-	//advance to the next bank in the bank sequence (auto-wrap to the beginning)
-	if (++BankSequencePos > BankSequenceEnd)
-		BankSequencePos = 0;
-
-	//if the next bank in the sequence is different from the previous, then
-	//reprogram the hardware with new bank settings
-	if (BankSequence[BankSequencePos] != BankLastUsedId) {
-		programBank(&theBankInfo[ BankSequence[BankSequencePos] ]);
-	}
-
-	//restore the input trigger settings
-	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
-	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
-	DbgOut(" Trig1_IN_Enabled = ");
-	DbgOutInt(Trig1_IN_Enabled);
-	DbgOut(" Trig2_IN_Enabled = ");
-	DbgOutInt(Trig2_IN_Enabled);
-	DbgOut("\r\n");
-}
 
 //-----------------------------------------------------------------------------------------
 unsigned char setActiveBank(unsigned short anActiveBank, unsigned char bForcePrograming)
@@ -1402,6 +1364,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// do not re-program hardware until it is cleared
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
+					AdvanceToTheNextBank |= nbfTrigger1;
 
 					T2CONbits.TON = 1;		// turn ON timer
 				}
@@ -1421,6 +1384,7 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// do not re-program hardware until it is cleared
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
+					AdvanceToTheNextBank |= nbfTrigger1;
 
 					T2CONbits.TON = 1;			// turn ON timer just a timer
 
@@ -1436,6 +1400,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set the flag that the delay counter is ON and active NOW
 					// so every Timer1 period we will process the delay
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfDelayAsT1ON;
+
+					AdvanceToTheNextBank |= nbfTrigger1;
 
 					#ifdef TRIG_TIMING_DEBUG_OUT_IN
 						DbgOut("=T1: tfDelayAsT1:: ");
@@ -1483,6 +1449,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger2;
+
 					T3CONbits.TON = 1;		// turn ON timer
 				} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
 					OUTB_CONFIG.OCM = 0;	// disable single pulse mode
@@ -1501,6 +1469,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger2;
+
 					T3CONbits.TON = 1;			// turn ON timer just a timer
 
 				} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT1) != 0) {
@@ -1511,6 +1481,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// do not re-program hardware until it is cleared
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
+
+					AdvanceToTheNextBank |= nbfTrigger2;
 
 					// set the flag that the delay counter is ON and active NOW
 					// so every Timer1 period we will process the delay
@@ -1573,6 +1545,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger1;
+
 					T2CONbits.TON = 1;		// turn ON timer
 				} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT2T3) != 0) {
 					OUTA_CONFIG.OCM = 0;	// disable single pulse mode
@@ -1591,6 +1565,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger1;
+
 					T2CONbits.TON = 1;			// turn ON timer just a timer
 
 				} else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfDelayAsT1) != 0) {
@@ -1605,6 +1581,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set the flag that the delay counter is ON and active NOW
 					// so every Timer1 period we will process the delay
 					TheDelayInfoWorking[HEAD1_IDX].m_flags |= tfDelayAsT1ON;
+
+					AdvanceToTheNextBank |= nbfTrigger1;
 
 					#ifdef TRIG_TIMING_DEBUG_OUT_IN
 						DbgOut("=T1: tfDelayAsT1:: ");
@@ -1651,6 +1629,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger2;
+
 					T3CONbits.TON = 1;		// turn ON timer
 				} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT2T3) != 0) {
 					OUTB_CONFIG.OCM = 0;	// disable single pulse mode
@@ -1669,6 +1649,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
 
+					AdvanceToTheNextBank |= nbfTrigger2;
+
 					T3CONbits.TON = 1;			// turn ON timer just a timer
 
 				} else if ((TheDelayInfoWorking[HEAD2_IDX].m_flags & tfDelayAsT1) != 0) {
@@ -1679,6 +1661,8 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 					// do not re-program hardware until it is cleared
 					// set it before we enable the timer
 					TheDelayInfoWorking[HEAD2_IDX].m_flags |= tfTriggerON;
+
+					AdvanceToTheNextBank |= nbfTrigger2;
 
 					// set the flag that the delay counter is ON and active NOW
 					// so every Timer1 period we will process the delay
@@ -1719,9 +1703,9 @@ void processTriggerIn(unsigned char aTrigInACpld, unsigned char aTrigInBCpld)
 
 
 /**
- * The procedure processes the Timer 1 intervals
+ * The procedure processes the Timer 4 intervals
  *
- * When we get timer 1 event we will check the trigger flags and
+ * When we get timer 4 event we will check the trigger flags and
  * decrement our delay and width counters
  *
  * When the counters reach 0 then we will do the trigger
@@ -1899,7 +1883,7 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 			T2CONbits.TON = 1;			// turn ON timer just a timer
 		}
 
-		// we do the width control trough the timer 1
+		// we do the width control trough the timer 4
 		else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsT1) != 0) {
 			TRIG_OUTA_PIC = 1;						// raise the trigger pin
 
@@ -1922,11 +1906,15 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 		#ifdef TRIG_TIMING_DEBUG_OUT
 			DbgOut("T2: tfPWMOnly\r\n");
 		#endif
+		AdvanceToTheNextBank &= ~nbfTrigger1;
+
 	}
 
 	// we finished PWM mode for width, then restore the flags
 	else if ((TheDelayInfoWorking[HEAD1_IDX].m_flags & tfWidthAsPWM) != 0) {
 		TheDelayInfoWorking[HEAD1_IDX] = TheDelayInfo[HEAD1_IDX];
+		AdvanceToTheNextBank &= ~nbfTrigger1;
+
 		#ifdef TRIG_TIMING_DEBUG_OUT
 			DbgOut("T2: tfWidthAsPWM\r\n");
 		#endif
@@ -1936,7 +1924,6 @@ void _ISR __attribute__ ((auto_psv)) _T2Interrupt (void)
 	#endif
 
 
-//	AdvanceToTheNextBank = 1;
 
 //	outputString(&UartDbg, "A=0\n");
 
@@ -2029,5 +2016,51 @@ void fireSoftTrigger(unsigned char aTriggerId)
 	processTriggerIn(1, 1);
 #endif
 
+}
+
+/**
+* Starts the high priority task to advance to the next bank
+*
+* We implement this as a task not as an interrup since it will
+* take some time to reprogram the hardware
+*/
+void Task_NextBank (void)
+{
+//	static unsigned char old_Trig1_IN_Enabled;
+//	static unsigned char old_Trig2_IN_Enabled;
+
+	// nothing to do, we just continue to the next task
+	if (AdvanceToTheNextBank == 0)
+		return ; 					//has already processed current bank, not ready for the next bank in sequence yet
+
+	AdvanceToTheNextBank = 0;		// reset the flag
+
+	// temporarily disable the input trigger
+//	old_Trig1_IN_Enabled = Trig1_IN_Enabled;
+//	old_Trig2_IN_Enabled = Trig2_IN_Enabled;
+//	Trig1_IN_Enabled = 0;
+//	Trig2_IN_Enabled = 0;
+
+	DbgOut("Task_NextBank");
+	DbgOut("\r\n");
+
+	//advance to the next bank in the bank sequence (auto-wrap to the beginning)
+	if (++BankSequencePos > BankSequenceEnd)
+		BankSequencePos = 0;
+
+	//if the next bank in the sequence is different from the previous, then
+	//reprogram the hardware with new bank settings
+	if (BankSequence[BankSequencePos] != BankLastUsedId) {
+		programBank(&theBankInfo[ BankSequence[BankSequencePos] ]);
+	}
+
+	//restore the input trigger settings
+//	Trig1_IN_Enabled = old_Trig1_IN_Enabled;
+//	Trig2_IN_Enabled = old_Trig2_IN_Enabled;
+//	DbgOut(" Trig1_IN_Enabled = ");
+//	DbgOutInt(Trig1_IN_Enabled);
+//	DbgOut(" Trig2_IN_Enabled = ");
+//	DbgOutInt(Trig2_IN_Enabled);
+//	DbgOut("\r\n");
 }
 

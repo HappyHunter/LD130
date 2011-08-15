@@ -215,6 +215,15 @@ void resetAllDACs(void);
 void initTrigger1(void);
 void initTrigger2(void);
 
+
+/**
+* Starts the high priority task to advance to the next bank
+*
+* We implement this as a task not as an interrup since it will
+* take some time to reprogram the hardware
+*/
+void Task_NextBank (void);
+
 /**
  * The function is called for every tick of Timer 1
  *
